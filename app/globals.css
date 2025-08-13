@@ -1,0 +1,7 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;    
+
+/* NativeWind helper for tint colors */
+.tint-white { tint-color: #ffffff; }
+.tint-secondary { tint-color: #160455; }

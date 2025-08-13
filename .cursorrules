@@ -1,0 +1,72 @@
+## Rules for modular, well-structured code in this workspace
+
+- **Language & Standards**
+  - Use TypeScript everywhere. Avoid `any`; prefer precise types and generics.
+  - Follow existing ESLint/Prettier configs. Do not override without discussion.
+  - Small, single-responsibility files. Split files >300 lines or with multiple concerns.
+  - I am using windows os
+
+- **Separation of Concerns**
+  - Keep I/O (HTTP, DB, file system) out of pure logic modules.
+  - Avoid cross-layer imports (e.g., controllers importing models directly). Use services/repositories.
+
+- **Folder placement (Backend) — `Backend/src/`**
+  - `controllers/`: Only parse/validate requests, call services, map to HTTP responses.
+  - `services/`: Business logic; orchestrate repositories and utils.
+  - `repositories/` or `models/`: Data access; no business logic.
+  - `routes/`: Route definitions only; map to controllers.
+  - `middlewares/`: Auth, validation, error handling.
+  - `utils/`: Pure stateless helpers.
+  - `types/`: Shared interfaces, DTOs, request/response types.
+  - `configs/`: Config/env loading; no runtime side effects beyond config.
+  - Place new backend files in the appropriate folder above. If a folder is missing, create it.
+
+- **Folder placement (Frontend) — `Frontend/src/`**
+  - `components/FeatureName/`: Reusable, presentational components (PascalCase filenames).
+  - `pages/FeatureName/`: Route-level components; compose components/hooks/services.
+  - `hooks/`: Reusable hooks `useX.ts`.
+  - `services/api/`: API clients and fetch logic; use a shared HTTP client.
+  - `context/`: React context providers.
+  - `types/`: Shared types/interfaces and API DTOs.
+  - `assets/`: Static assets.
+  - Co-locate component-specific styles as CSS Modules or scoped styles. Avoid global CSS leakage.
+
+- **HTTP clients**
+  - Use a shared HTTP client (with interceptors) rather than per-call `fetch`/`axios`.
+  - Centralize base URL, auth headers, retries, and error normalization.
+
+- **Validation & Errors**
+  - Validate all external inputs (requests, env, API responses). Use schema validation where helpful.
+  - Backend: Throw typed errors; rely on centralized `errorHandler` middleware for responses.
+  - Frontend: Normalize API errors in services; components receive user-friendly messages.
+
+- **Testing**
+  - Co-locate tests next to code as `*.test.ts`/`*.test.tsx` or in `__tests__/`.
+  - Unit-test services, hooks, and pure utils. Prefer integration tests for controllers/routes.
+
+- **State & Side Effects (Frontend)**
+  - Prefer local state; elevate to context only when shared across distant components.
+  - Keep effects minimal and idempotent; extract complex logic to hooks.
+
+- **Naming & Conventions**
+  - Files: `kebab-case` for non-components; `PascalCase.tsx` for React components.
+  - Exports: Prefer named exports; use `index.ts` only as thin barrels when helpful.
+  - Functions/components should do one thing; avoid "god" modules.
+
+- **Dependencies & Imports**
+  - Do not introduce new libraries if standard libs/utilities suffice.
+  - Prefer relative imports within a feature; use root/alias imports only if configured.
+
+- **Security & Config**
+  - Never hardcode secrets. Use `.env` + typed config loader in `configs/`.
+  - Sanitize/escape output where relevant; validate and authorize on every endpoint.
+
+- **Performance**
+  - Avoid N+1 data access; batch where possible.
+  - Frontend: Memoize expensive computations; lazy-load pages; avoid unnecessary re-renders.
+
+- **When generating code, ALWAYS**
+  - State the exact target path(s) and create missing folders.
+  - Place files in the correct folder per rules above.
+  - Add minimal docs/JSDoc for exported functions, types, and components.
+  - Add/extend tests when adding non-trivial logic.
