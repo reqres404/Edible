@@ -41,6 +41,12 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow Edible to access your camera to scan food product barcodes."
+        }
       ]
     ],
     "experiments": {

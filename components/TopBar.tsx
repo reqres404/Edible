@@ -10,7 +10,7 @@ export default function TopBar() {
 
   return (
     <SafeAreaView edges={["top"]} className="bg-primary">
-      <StatusBar style="light" backgroundColor="#8C52FF" />
+      <StatusBar style="light" />
       <View className="w-full px-5 py-3 flex-row items-center justify-between">
         <View className="flex-row items-end">
           <Text
@@ -33,7 +33,7 @@ export default function TopBar() {
           </Text>
         </View>
 
-        <Pressable onPress={() => router.push("/scan")} hitSlop={10} className="p-1">
+        <Pressable onPress={() => router.push("/(tabs)/scan")} hitSlop={10} className="p-1">
           <Image source={icons.scan} className="w-7 h-7" style={{ tintColor: "#FFFFFF" }} />
         </Pressable>
       </View>
