@@ -1,4 +1,5 @@
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import * as Haptics from 'expo-haptics';
 import { Tabs, useRouter } from "expo-router";
 import { Image, Pressable, View } from "react-native";
 
@@ -29,6 +30,8 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   };
 
   const onPressRoute = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
     const event = navigation.emit({
       type: "tabPress",
       target: state.routes[index].key,
@@ -76,7 +79,10 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       </View>
 
       <Pressable
-        onPress={() => router.push("/scan")}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          router.push("/scan");
+        }}
         className="absolute self-center -top-6 w-20 h-20 rounded-full items-center justify-center bg-deep shadow-2xl"
       >
         <View className="w-20 h-20 rounded-full border-4 border-white items-center justify-center">

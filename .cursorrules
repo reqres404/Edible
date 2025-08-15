@@ -60,7 +60,7 @@
 - **Security & Config**
   - Never hardcode secrets. Use `.env` + typed config loader in `configs/`.
   - Sanitize/escape output where relevant; validate and authorize on every endpoint.
-
+  - This is Production level mobile app make changes accordingly
 - **Performance**
   - Avoid N+1 data access; batch where possible.
   - Frontend: Memoize expensive computations; lazy-load pages; avoid unnecessary re-renders.
