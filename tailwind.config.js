@@ -18,8 +18,24 @@ module.exports = {
           200: "#0F0D23",
         },
         accent: "#AB8BFF",
+        offwhite: "#F8F9FA",
       },
     },
   },
   plugins: [],
 };
+
+// --bg-dark: oklch(0.1 0.055 257);
+// --bg: oklch(0.15 0.055 257);
+// --bg-light: oklch(0.2 0.055 257);
+// --text: oklch(0.96 0.1 257);
+// --text-muted: oklch(0.76 0.1 257);
+// --highlight: oklch(0.5 0.11 257);
+// --border: oklch(0.4 0.11 257);
+// --border-muted: oklch(0.3 0.11 257);
+// --primary: oklch(0.76 0.11 257);
+// --secondary: oklch(0.76 0.11 77);
+// --danger: oklch(0.7 0.11 30);
+// --warning: oklch(0.7 0.11 100);
+// --success: oklch(0.7 0.11 160);
+// --info: oklch(0.7 0.11 260);
