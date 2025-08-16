@@ -11,8 +11,7 @@ export default function RootLayout() {
     <SafeAreaProvider>
       <Stack initialRouteName="(tabs)">
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        
-        <Stack.Screen name="(tabs)/scan" options={{ headerShown: false, presentation: "modal" }} />
+        <Stack.Screen name="scan" options={{ headerShown: false, presentation: "modal" }} />
       </Stack>
     </SafeAreaProvider>
   );

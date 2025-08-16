@@ -33,7 +33,7 @@ export default function TopBar() {
           </Text>
         </View>
 
-        <Pressable onPress={() => router.push("/(tabs)/scan")} hitSlop={10} className="p-1">
+        <Pressable onPress={() => router.push("/scan")} hitSlop={10} className="p-1">
           <Image source={icons.scan} className="w-7 h-7" style={{ tintColor: "#FFFFFF" }} />
         </Pressable>
       </View>
