@@ -1,26 +1,35 @@
+import FeedbackRatingSection from "@/components/FeedbackRatingSection";
+import Footer from "@/components/Footer";
 import GridSection from "@/components/GridSection";
 import HeroSection from "@/components/HeroSection";
+import InfoCarousel from "@/components/InfoCarousel";
 import TopBar from "@/components/TopBar";
-import { View } from "react-native";
-
-const heroCards = [
-  { id: 1, image: require("../../assets/images/section-1-card-1.png") },
-  { id: 2, image: require("../../assets/images/section-1-card-3.png") },
-];
+import { ScrollView, View } from "react-native";
 
 export default function Index() {
   return (
     <View className="flex-1 bg-offwhite">
       <TopBar />
-      <View className="flex-1 px-2.5 pt-0">
-        <View className="mb-0 mt-2">
+      <ScrollView 
+        className="flex-1 px-2.5 pt-0"
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 20 }}
+      >
+        <View className="mb-4 mt-4">
           <HeroSection/>
         </View>
 
         <View className="mb-4">
           <GridSection />
         </View>
-      </View>
+
+        <View className="mb-4">
+          <InfoCarousel />
+        </View>
+
+        <FeedbackRatingSection />
+        <Footer />
+      </ScrollView>
     </View>
   );
 }

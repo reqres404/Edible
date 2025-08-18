@@ -18,7 +18,7 @@ module.exports = {
           200: "#0F0D23",
         },
         accent: "#AB8BFF",
-        offwhite: "#F8F9FA",
+        offwhite:"#f0f4f7",
       },
     },
   },

@@ -30,11 +30,11 @@ const GridSection: React.FC<GridSectionProps> = ({ onCardPress }) => {
       className="relative" 
       style={{ height: width * 0.5}}
     >
-      <View className="flex-row justify-between px-4" style={{ gap: 12 }}>
+      <View className="flex-row justify-between px-2.5" style={{ gap: 4 }}>
         {/* Profile Card */}
         <Pressable
           onPress={() => handleCardPress('profile')}
-          className="flex-1 rounded-3xl overflow-hidden relative border-2 border-primary"
+          className="flex-1 rounded-3xl overflow-hidden relative"
           style={{ height: width * 0.5 }}
         >
           {/* Background Image */}
@@ -74,7 +74,7 @@ const GridSection: React.FC<GridSectionProps> = ({ onCardPress }) => {
         {/* Search Card */}
         <Pressable
           onPress={() => handleCardPress('search')}
-          className="flex-1 rounded-3xl overflow-hidden relative border-2 border-primary"
+          className="flex-1 rounded-3xl overflow-hidden relative"
           style={{ height: width * 0.5 }}
         >
           {/* Background Image */}

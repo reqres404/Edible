@@ -1,23 +1,37 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, FlatList, Image, View } from 'react-native';
+import { Dimensions, FlatList, Image, Text, View } from 'react-native';
 
 const { width } = Dimensions.get('window');
 
 interface HeroSectionProps {
-  images?: any[];
   autoSlideInterval?: number;
 }
 
 const HeroSection: React.FC<HeroSectionProps> = ({ 
-  images = [
-    require("../assets/images/section-1-card-1.png"),
-    require("../assets/images/section-1-card-3.png"),
-  ],
-  autoSlideInterval = 3000
+  autoSlideInterval = 5000
 }) => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const flatListRef = useRef<FlatList>(null);
   const autoSlideRef = useRef<number | null>(null);
+
+  // Carousel data with background image and text
+  const carouselData = [
+    { 
+      id: 1, 
+      text: "Ingredient labels got you confused?\nScan it. We'll translate the nutrition nonsense.",
+      showMascot: true 
+    },
+    { 
+      id: 2, 
+      text: "\"E150d\"? \"Stabilizer (INS 452)\"??\nJust scan it. Edible speaks food fluently.",
+      showMascot: true 
+    },
+    { 
+      id: 3, 
+      text: "Don't panic, just scan it.\nEdible will tell you whether it's actually edible.",
+      showMascot: true 
+    },
+  ];
 
   // Auto-slide functionality
   useEffect(() => {
@@ -28,7 +42,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   const startAutoSlide = (): void => {
     stopAutoSlide();
     autoSlideRef.current = setTimeout(() => {
-      const nextIndex = (currentIndex + 1) % images.length;
+      const nextIndex = (currentIndex + 1) % carouselData.length;
       scrollToIndex(nextIndex);
     }, autoSlideInterval);
   };
@@ -55,7 +69,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   const handleScroll = (event: any): void => {
     const contentOffsetX = event.nativeEvent.contentOffset.x;
     const index = Math.round(contentOffsetX / width);
-    if (index !== currentIndex && index >= 0 && index < images.length) {
+    if (index !== currentIndex && index >= 0 && index < carouselData.length) {
       setCurrentIndex(index);
     }
   };
@@ -66,28 +80,106 @@ const HeroSection: React.FC<HeroSectionProps> = ({
       style={{ width }}
     >
       <View 
-        className="rounded-3xl overflow-hidden"
+        className="rounded-3xl overflow-hidden relative"
         style={{ 
           width: width * 0.92, 
-          height: width * 0.5,
+          height: width * 0.4,
         }}
       >
+        {/* Background Image */}
         <Image
-          source={item}
-          style={{ width: '100%', height: '100%' }}
-          resizeMode="contain"
+          source={require("../assets/images/bg.png")}
+          style={{ 
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%'
+          }}
+          resizeMode="cover"
         />
+        
+        {/* Mascot Image for Slide 1 - Right Half */}
+        {item.showMascot && (
+          <View className={`absolute top-0 h-full justify-center items-center ${
+            item.id === 2 ? 'left-0 w-2/5' : 'right-0 w-2/5'
+          }`}>
+            <Image
+              source={require("../assets/images/mascot/daboo-walking-winking.png")}
+              style={{ 
+                width: 120, 
+                height: 120,
+                resizeMode: 'contain'
+              }}
+            />
+          </View>
+        )}
+        
+        {/* Text Overlay - Left Half */}
+        <View className={`flex-1 justify-center items-start px-6 ${
+          item.id === 2 ? 'w-3/5 ml-auto' : 'w-3/5'
+        }`}>
+          {item.showMascot ? (
+            <>
+              {/* Headline */}
+              <Text 
+                className="text-primary font-bold leading-tight text-center mb-4"
+                style={{ 
+                  fontFamily: "LeagueSpartan",
+                  fontSize: 18,
+                  textShadowColor: 'rgba(0, 0, 0, 0.2)',
+                  textShadowOffset: { width: 0.5, height: 0.5 },
+                  textShadowRadius: 1
+                }}
+              >
+                {item.id === 1 ? "Ingredient labels got you confused?" : 
+                 item.id === 2 ? "\"E150d\"? \"Stabilizer (INS 452)\"??" :
+                 "Don't panic, just scan it."}
+              </Text>
+              
+              {/* Sub-headline/Call to Action */}
+              <Text 
+                className="text-primary font-semibold leading-tight text-center"
+                style={{ 
+                  fontFamily: "LeagueSpartan",
+                  fontSize: 14,
+                  width: '100%',
+                  textShadowColor: 'rgba(0, 0, 0, 0.2)',
+                  textShadowOffset: { width: 0.5, height: 0.5 },
+                  textShadowRadius: 1
+                }}
+              >
+                {item.id === 1 ? "Scan it. We'll translate the nutrition nonsense." : 
+                 item.id === 2 ? "Just scan it. Edible speaks food fluently." :
+                 "Edible will tell you whether it's actually edible."}
+              </Text>
+            </>
+          ) : (
+            <Text 
+              className="text-center text-primary font-bold leading-tight"
+              style={{ 
+                fontFamily: "LeagueSpartan",
+                fontSize: 48,
+                textShadowColor: 'rgba(0, 0, 0, 0.3)',
+                textShadowOffset: { width: 1, height: 1 },
+                textShadowRadius: 2
+              }}
+            >
+              {item.text}
+            </Text>
+          )}
+        </View>
       </View>
     </View>
   );
 
   return (
-    <View className="relative" style={{ height: width * 0.5, marginTop: -20 }}>
+    <View className="relative" style={{ height: width * 0.4 }}>
       <FlatList
         ref={flatListRef}
-        data={images}
+        data={carouselData}
         renderItem={renderItem}
-        keyExtractor={(_, index) => index.toString()}
+        keyExtractor={(item) => item.id.toString()}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
@@ -99,8 +191,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({
         onScrollBeginDrag={stopAutoSlide}
         onScrollEndDrag={startAutoSlide}
       />
-
-
     </View>
   );
 };
