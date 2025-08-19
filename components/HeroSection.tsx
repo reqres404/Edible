@@ -12,10 +12,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({
 }) => {
   const [currentIndex, setCurrentIndex] = useState<number>(0);
   const flatListRef = useRef<FlatList>(null);
-  const autoSlideRef = useRef<number | null>(null);
+  const autoSlideRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Carousel data with background image and text
-  const carouselData = [
+  // Base carousel data
+  const baseData = [
     { 
       id: 1, 
       text: "Ingredient labels got you confused?\nScan it. We'll translate the nutrition nonsense.",
@@ -33,7 +33,22 @@ const HeroSection: React.FC<HeroSectionProps> = ({
     },
   ];
 
-  // Auto-slide functionality
+  // Infinite dataset
+  const loopFactor = 50;
+  const carouselData = Array.from({ length: loopFactor }).flatMap(() => baseData);
+  const initialIndex = baseData.length * Math.floor(loopFactor / 2);
+
+  // Set initial index on mount
+  useEffect(() => {
+    if (flatListRef.current) {
+      flatListRef.current.scrollToIndex({ index: initialIndex, animated: false });
+      setCurrentIndex(initialIndex);
+    }
+    startAutoSlide();
+    return () => stopAutoSlide();
+  }, []);
+
+  // Restart auto slide on index change
   useEffect(() => {
     startAutoSlide();
     return () => stopAutoSlide();
@@ -42,8 +57,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   const startAutoSlide = (): void => {
     stopAutoSlide();
     autoSlideRef.current = setTimeout(() => {
-      const nextIndex = (currentIndex + 1) % carouselData.length;
-      scrollToIndex(nextIndex);
+      scrollToIndex(currentIndex + 1);
     }, autoSlideInterval);
   };
 
@@ -55,8 +69,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
   };
 
   const scrollToIndex = (index: number): void => {
-    if (flatListRef.current && index !== currentIndex) {
-      stopAutoSlide();
+    if (flatListRef.current) {
       flatListRef.current.scrollToIndex({
         index,
         animated: true,
@@ -74,54 +87,37 @@ const HeroSection: React.FC<HeroSectionProps> = ({
     }
   };
 
-  const renderItem = ({ item, index }: { item: any; index: number }) => (
-    <View 
-      className="justify-center items-center px-4" 
-      style={{ width }}
-    >
+  const renderItem = ({ item }: { item: any }) => (
+    <View className="justify-center items-center px-4" style={{ width }}>
       <View 
         className="rounded-3xl overflow-hidden relative"
-        style={{ 
-          width: width * 0.92, 
-          height: width * 0.4,
-        }}
+        style={{ width: width * 0.92, height: width * 0.4 }}
       >
         {/* Background Image */}
         <Image
           source={require("../assets/images/bg.png")}
-          style={{ 
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%'
-          }}
+          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
           resizeMode="cover"
         />
         
-        {/* Mascot Image for Slide 1 - Right Half */}
+        {/* Mascot */}
         {item.showMascot && (
           <View className={`absolute top-0 h-full justify-center items-center ${
             item.id === 2 ? 'left-0 w-2/5' : 'right-0 w-2/5'
           }`}>
             <Image
               source={require("../assets/images/mascot/daboo-walking-winking.png")}
-              style={{ 
-                width: 120, 
-                height: 120,
-                resizeMode: 'contain'
-              }}
+              style={{ width: 120, height: 120, resizeMode: 'contain' }}
             />
           </View>
         )}
         
-        {/* Text Overlay - Left Half */}
+        {/* Text Overlay */}
         <View className={`flex-1 justify-center items-start px-6 ${
           item.id === 2 ? 'w-3/5 ml-auto' : 'w-3/5'
         }`}>
           {item.showMascot ? (
             <>
-              {/* Headline */}
               <Text 
                 className="text-primary font-bold leading-tight text-center mb-4"
                 style={{ 
@@ -136,8 +132,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({
                  item.id === 2 ? "\"E150d\"? \"Stabilizer (INS 452)\"??" :
                  "Don't panic, just scan it."}
               </Text>
-              
-              {/* Sub-headline/Call to Action */}
               <Text 
                 className="text-primary font-semibold leading-tight text-center"
                 style={{ 
@@ -179,7 +173,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({
         ref={flatListRef}
         data={carouselData}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id.toString()}
+        keyExtractor={(_, idx) => idx.toString()}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
@@ -190,6 +184,12 @@ const HeroSection: React.FC<HeroSectionProps> = ({
         decelerationRate="fast"
         onScrollBeginDrag={stopAutoSlide}
         onScrollEndDrag={startAutoSlide}
+        initialScrollIndex={initialIndex}
+        getItemLayout={(_, index) => ({
+          length: width,
+          offset: width * index,
+          index
+        })}
       />
     </View>
   );

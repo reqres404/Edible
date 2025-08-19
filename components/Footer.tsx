@@ -14,7 +14,7 @@ const Footer: React.FC = () => {
             lineHeight: 44
           }}
         >
-          Let Edible Make What You Eat Edible
+          Let Edible Make Sure What You Eat Is Edible
           <Text>
             ❤️
           </Text>
