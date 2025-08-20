@@ -53,6 +53,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           const routesForBar = visibleRoutes;
           const renderIcon = (route: typeof visibleRoutes[number], index: number) => {
             const isFocused = state.index === index;
+            const routeName = route?.name || 'index';
             return (
               <Pressable
                 key={route.key}
@@ -61,7 +62,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 onPress={() => onPressRoute(index)}
                 className="items-center justify-center"
               >
-                <Image source={getIconForRoute(route.name)} style={{ width: 28, height: 28, tintColor: isFocused ? activeTintColor : inactiveTintColor }} />
+                <Image source={getIconForRoute(routeName)} style={{ width: 28, height: 28, tintColor: isFocused ? activeTintColor : inactiveTintColor }} />
               </Pressable>
             );
           };
