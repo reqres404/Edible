@@ -14,18 +14,29 @@ function RootLayoutNav() {
   useEffect(() => {
     if (isLoading) return;
 
-    const inAuthGroup = segments[0] === 'auth' as any;
+    // Add a small delay to ensure proper mounting
+    const timer = setTimeout(() => {
+      const inAuthGroup = segments[0] === 'auth' as any;
 
-    if (!user && !inAuthGroup) {
-      // Redirect to sign in if not authenticated
-      router.replace('/auth/signin' as any);
-    } else if (user && inAuthGroup) {
-      // Redirect to main app if authenticated
-      router.replace('/(tabs)' as any);
-    }
-  }, [user, segments, isLoading]);
+      if (!user && !inAuthGroup) {
+        // Redirect to sign in if not authenticated
+        router.replace('/auth/signin' as any);
+      } else if (user && inAuthGroup) {
+        // Redirect to main app if authenticated
+        router.replace('/(tabs)' as any);
+      }
+    }, 100);
 
+    return () => clearTimeout(timer);
+  }, [user, segments, isLoading, router]);
+
+  // Show loading screen while checking authentication
   if (isLoading) {
+    return <LoadingScreen />;
+  }
+
+  // Don't render anything until we know the user's authentication status
+  if (user === null && segments[0] !== 'auth') {
     return <LoadingScreen />;
   }
 

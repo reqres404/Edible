@@ -1,13 +1,17 @@
-// import { GoogleSignin, GoogleSigninButton, statusCodes, isSuccessResponse, isErrorWithCode } from "@react-native-google-signin/google-signin";
+import { GoogleSignin, GoogleSigninButton, statusCodes, isSuccessResponse, isErrorWithCode } from "@react-native-google-signin/google-signin";
 import { useState } from "react";
 import { View, Text, Alert, Image, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
 
-// Temporarily disable Google Sign-In configuration
-// GoogleSignin.configure({
-//   webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
-// });
+// Configure Google Sign-In
+GoogleSignin.configure({
+  webClientId:
+    process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB ||
+    process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
+    undefined,
+  offlineAccess: true,
+});
 
 const SignInScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -18,36 +22,45 @@ const SignInScreen = () => {
     try {
       setIsLoading(true);
       
-      // Temporarily use mock data for testing
-      const mockUserData = {
-        id: 'mock-user-123',
-        email: 'test@example.com',
-        name: 'Test User',
-        photo: null,
-      };
+      // Check if Google Play Services are available (Android only)
+      await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true });
       
-      await signIn(mockUserData);
-      router.replace("/(tabs)");
+      // Sign in with Google
+      const response = await GoogleSignin.signIn();
       
-      // TODO: Re-enable Google Sign-In after fixing native module
-      // await GoogleSignin.hasPlayServices();
-      // const response = await GoogleSignin.signIn();
-      // 
-      // if (isSuccessResponse(response)) {
-      //   const userData = {
-      //     id: response.data.user.id,
-      //     email: response.data.user.email || '',
-      //     name: response.data.user.name || 'User',
-      //     photo: response.data.user.photo,
-      //   };
-      //   
-      //   await signIn(userData);
-      //   router.replace("/(tabs)");
-      // } else {
-      //   console.log("Sign in was cancelled by user");
-      // }
-    } catch (error) {
-      Alert.alert("Sign-in Failed!", "Please try again later.");
+      if (isSuccessResponse(response)) {
+        const userData = {
+          id: response.data.user.id,
+          email: response.data.user.email || '',
+          name: response.data.user.name || 'User',
+          photo: response.data.user.photo,
+        };
+        
+        await signIn(userData);
+        router.replace("/(tabs)");
+      } else {
+        console.log("Sign in was cancelled by user");
+      }
+    } catch (error: any) {
+      console.error('Google Sign-In Error:', error);
+      
+      if (error?.message?.includes('NETWORK_ERROR')) {
+        Alert.alert(
+          'Network issue',
+          'Unable to reach Google. Please check your internet connection and try again.'
+        );
+        return;
+      }
+      
+      if (error.code === statusCodes.SIGN_IN_CANCELLED) {
+        console.log("Sign in was cancelled by user");
+      } else if (error.code === statusCodes.IN_PROGRESS) {
+        console.log("Sign in is already in progress");
+      } else if (error.code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+        Alert.alert("Error", "Google Play Services not available");
+      } else {
+        Alert.alert("Sign-in Failed!", "Please try again later.");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -70,31 +83,42 @@ const SignInScreen = () => {
         </Text>
       </View>
 
-      {/* Temporary Sign-In Button */}
-      <TouchableOpacity
-        onPress={handleGoogleSignIn}
-        disabled={isLoading}
-        className="bg-blue-500 rounded-xl py-4 px-8 items-center"
-        style={{ width: 280, height: 56 }}
-      >
-        <Text className="text-white font-semibold text-lg">
-          {isLoading ? "Signing in..." : "Sign In (Demo)"}
+      {/* Google Sign-In Button */}
+      <View className="w-full max-w-sm">
+        <GoogleSigninButton
+          style={{ 
+            width: '100%', 
+            height: 56,
+            borderRadius: 50,
+            shadowColor: '#000',
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.1,
+            shadowRadius: 8,
+            elevation: 8,
+          }}
+          size={GoogleSigninButton.Size.Wide}
+          color={GoogleSigninButton.Color.Light}
+          onPress={handleGoogleSignIn}
+          disabled={isLoading}
+        />
+        
+        {/* Custom styled alternative button for better control */}
+        {isLoading && (
+          <View className="absolute inset-0 bg-white bg-opacity-90 rounded-2xl items-center justify-center">
+            <View className="flex-row items-center">
+              <View className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin mr-3" />
+              <Text className="text-blue-600 font-semibold text-base">Signing in...</Text>
+            </View>
+          </View>
+        )}
+      </View>
+
+      {/* Additional styling for the button container */}
+      <View className="mt-6 px-8">
+        <Text className="text-gray-500 text-sm text-center leading-5">
+          Sign in securely with your Google account
         </Text>
-      </TouchableOpacity>
-
-      {/* TODO: Re-enable Google Sign-In Button after fixing native module */}
-      {/* <GoogleSigninButton
-        style={{ width: 280, height: 56 }}
-        size={GoogleSigninButton.Size.Wide}
-        color={GoogleSigninButton.Color.Dark}
-        onPress={handleGoogleSignIn}
-        disabled={isLoading}
-      /> */}
-
-      {/* Loading State */}
-      {isLoading && (
-        <Text className="text-gray-500 mt-4">Signing in...</Text>
-      )}
+      </View>
     </View>
   );
 };

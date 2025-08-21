@@ -55,8 +55,7 @@
         {
           "cameraPermission": "Allow Edible to access your camera to scan food product barcodes."
         }
-      ],
-      "expo-barcode-scanner"
+      ]
     ],
     "experiments": {
       "typedRoutes": true

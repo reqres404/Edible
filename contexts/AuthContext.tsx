@@ -1,7 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
-// Temporarily disable Google Sign-In import
-// import { GoogleSignin } from '@react-native-google-signin/google-signin';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 interface User {
   id: string;
@@ -47,8 +46,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const signOut = async () => {
     try {
-      // Temporarily disable Google Sign-In sign out
-      // await GoogleSignin.signOut(); // This line is removed as per the edit hint
+      await GoogleSignin.signOut();
       await SecureStore.deleteItemAsync('user');
       setUser(null);
     } catch (error) {
