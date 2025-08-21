@@ -35,3 +35,10 @@ Just scan it. Edible speaks food fluently.
 
 Don’t panic, just scan it.
 Edible will tell you whether it's actually edible.
+
+
+when the tunnel stops working (something wen wrong error on device)
+npx expo start -c
+npx expo start --lan
+and then switch to tunnel
+npx expo start --tunnel
