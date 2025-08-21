@@ -3,7 +3,9 @@ import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { BarcodeScanningResult, CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from "react";
-import { Dimensions, Platform, Pressable, Text, View } from "react-native";
+import { Dimensions, Platform, Pressable, Text, View, Alert } from "react-native";
+import { useAuth } from "@/contexts/AuthContext";
+import { apiService } from "@/services/api";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -19,6 +21,7 @@ export default function ScanScreen() {
   const [scanAreaActive, setScanAreaActive] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const isFocused = useIsFocused();
+  const { getCurrentToken } = useAuth();
   
   // Barcode validation functions
   const isValidBarcode = (code: string): boolean => {
@@ -270,6 +273,45 @@ export default function ScanScreen() {
     };
   }, []);
 
+  // Function to call backend API when barcode is scanned
+  const callBackendAPI = async (barcode: string) => {
+    try {
+      console.log(`🚀 Calling backend API for barcode: ${barcode}`);
+      
+      // Get current user's authentication token
+      const token = await getCurrentToken();
+      if (!token) {
+        console.log('❌ No authentication token available');
+        Alert.alert('Authentication Required', 'Please sign in to scan products');
+        return;
+      }
+      
+      console.log('🔑 Authentication token obtained, calling API...');
+      
+      // Call the backend API
+      const result = await apiService.getProductByBarcode(barcode, token);
+      
+      console.log('🎉 Backend API call successful!');
+      console.log('📦 Product data:', result.data);
+      
+      // You can add navigation to product details here
+      // router.push(`/product/${barcode}`);
+      
+    } catch (error: any) {
+      console.error('🚨 Backend API call failed:', error);
+      
+      if (error.message?.includes('401')) {
+        Alert.alert('Authentication Error', 'Please sign in again');
+      } else if (error.message?.includes('404')) {
+        Alert.alert('Product Not Found', 'This barcode is not in our database');
+      } else if (error.message?.includes('429')) {
+        Alert.alert('Rate Limit Exceeded', 'Please wait a moment before scanning again');
+      } else {
+        Alert.alert('Error', 'Failed to fetch product information. Please try again.');
+      }
+    }
+  };
+
   const handleBarCodeScanned = ({ type, data }: BarcodeScanningResult) => {
     // Prevent scanning if scanning is temporarily disabled
     if (!isScanningEnabled) {
@@ -352,6 +394,9 @@ export default function ScanScreen() {
       setIsScanningEnabled(true);
       console.log('✅ Scanning re-enabled - cooldown period ended');
     }, 3000);
+
+    // Call backend API to get product information
+    callBackendAPI(data);
   };
 
   // Function to manually confirm a pending barcode (for debugging/testing)

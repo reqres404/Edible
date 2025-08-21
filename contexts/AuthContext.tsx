@@ -15,6 +15,7 @@ interface AuthContextType {
   signIn: (userData: User) => Promise<void>;
   signOut: () => Promise<void>;
   checkAuthState: () => Promise<void>;
+  getCurrentToken: () => Promise<string | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -68,6 +69,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
+  const getCurrentToken = async (): Promise<string | null> => {
+    try {
+      // Get current user's Google ID token
+      const currentUser = await GoogleSignin.getCurrentUser();
+      if (currentUser) {
+        const tokens = await GoogleSignin.getTokens();
+        return tokens.idToken; // Changed from accessToken to idToken
+      }
+      return null;
+    } catch (error) {
+      console.error('Error getting current token:', error);
+      return null;
+    }
+  };
+
   useEffect(() => {
     checkAuthState();
   }, []);
@@ -78,6 +94,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     signIn,
     signOut,
     checkAuthState,
+    getCurrentToken,
   };
 
   return (
