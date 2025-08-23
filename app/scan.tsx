@@ -3,9 +3,12 @@ import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { BarcodeScanningResult, CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from "react";
-import { Dimensions, Platform, Pressable, Text, View, Alert } from "react-native";
+import { Dimensions, Platform, Pressable, Text, View, Alert, Animated, FlatList } from "react-native";
 import { useAuth } from "@/contexts/AuthContext";
+import { useScannedProducts, ScannedProduct } from "@/contexts/ScannedProductsContext";
 import { apiService } from "@/services/api";
+import { ScannedProductIcon } from "@/components/ScannedProductIcon";
+import { ProductInfoDrawer } from "@/components/ProductInfoDrawer";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -17,11 +20,19 @@ export default function ScanScreen() {
   const [lastScannedCode, setLastScannedCode] = useState<string | null>(null);
   const [showSuccessIndicator, setShowSuccessIndicator] = useState(false);
   const [isScanningEnabled, setIsScanningEnabled] = useState(true);
+  const successIndicatorAnim = useRef(new Animated.Value(0)).current;
   const [scannedCodes, setScannedCodes] = useState<Set<string>>(new Set());
-  const [scanAreaActive, setScanAreaActive] = useState(false);
+  const [currentScannedProducts, setCurrentScannedProducts] = useState<ScannedProduct[]>([]);
+  const [showProductNotFound, setShowProductNotFound] = useState(false);
+  const [isWaitingForAPI, setIsWaitingForAPI] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<ScannedProduct | null>(null);
+  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+  const productNotFoundAnim = useRef(new Animated.Value(0)).current;
   const cameraRef = useRef<CameraView>(null);
+  const flatListRef = useRef<FlatList>(null);
   const isFocused = useIsFocused();
   const { getCurrentToken } = useAuth();
+  const { addScannedProduct, isProductAlreadyScanned, scannedProducts } = useScannedProducts();
   
   // Barcode validation functions
   const isValidBarcode = (code: string): boolean => {
@@ -100,49 +111,29 @@ export default function ScanScreen() {
     return matches / code1.length;
   };
 
-  // Check if barcode is in the optimal scanning area
-  const isInScanArea = (barcodeData: string): boolean => {
-    // For now, we'll use a simple approach - in a real implementation,
-    // you'd get the actual barcode position from the camera
-    // This simulates the barcode being in the purple border area
-    
-    // Set scan area as active when we detect a barcode
-    setScanAreaActive(true);
-    
-    // Reset after a short delay
-    setTimeout(() => {
-      setScanAreaActive(false);
-    }, 1000);
-    
-    return true; // Always return true for now, but you can enhance this
+  const isInScanArea = (code: string): boolean => {
+    // Simple validation - just check if code is in the general area
+    // In a real implementation, you'd get the actual barcode position from the camera
+    return true; // Always return true for now
   };
 
-  // Enhanced scan area detection with quality assessment
-  const assessScanQuality = (barcodeData: string): { inArea: boolean; quality: 'excellent' | 'good' | 'poor' } => {
+  const assessScanQuality = (code: string): { inArea: boolean; quality: 'excellent' | 'good' | 'poor' } => {
     // Simulate quality assessment based on barcode data
     // In a real implementation, this would use camera data and barcode positioning
     
-    // Set scan area as active
-    setScanAreaActive(true);
-    
-    // Reset after a short delay
-    setTimeout(() => {
-      setScanAreaActive(false);
-    }, 1000);
-    
     // Simulate quality assessment
-    const quality = barcodeData.length >= 13 ? 'excellent' : 
-                   barcodeData.length >= 8 ? 'good' : 'poor';
+    const quality = code.length >= 13 ? 'excellent' : 
+                   code.length >= 8 ? 'good' : 'poor';
     
-    console.log(`🎯 Scan quality assessment: ${quality} (length: ${barcodeData.length})`);
+    console.log(`🎯 Scan quality assessment: ${quality} (length: ${code.length})`);
     
     return { inArea: true, quality };
   };
 
   // Provide scanning guidance based on current state
   const getScanningGuidance = (): string => {
-    if (scanAreaActive) {
-      return "Barcode detected! Processing...";
+    if (isWaitingForAPI) {
+      return "Processing scanned item...";
     }
     if (!isScanningEnabled) {
       return "Scanning paused - please wait...";
@@ -174,6 +165,23 @@ export default function ScanScreen() {
     return false; // Allow all scans
   };
 
+  // Scroll to the latest product when a new one is added
+  useEffect(() => {
+    if (currentScannedProducts.length > 0 && flatListRef.current) {
+      // Small delay to ensure the FlatList has rendered
+      setTimeout(() => {
+        flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+      }, 100);
+    }
+  }, [currentScannedProducts.length]);
+
+  // Sync with global scanned products context to maintain persistence
+  useEffect(() => {
+    if (scannedProducts.length > 0) {
+      setCurrentScannedProducts(scannedProducts);
+    }
+  }, [scannedProducts]);
+
   useEffect(() => {
     if (Platform.OS === 'android') {
       // Android initialization
@@ -183,8 +191,6 @@ export default function ScanScreen() {
     
     // Log initial scanning status
     console.log('🚀 Scan screen mounted - scanning system initialized');
-    logScanningStatus();
-    exportScanningData();
   }, []);
 
   useFocusEffect(
@@ -294,18 +300,109 @@ export default function ScanScreen() {
       console.log('🎉 Backend API call successful!');
       console.log('📦 Product data:', result.data);
       
-      // You can add navigation to product details here
-      // router.push(`/product/${barcode}`);
+      // Transform the API response to our ScannedProduct format
+      const scannedProduct: ScannedProduct = {
+        barcode: barcode,
+        name: result.data.name,
+        brand: result.data.brand,
+        imageUrl: result.data.imageUrl,
+        categories: result.data.categories,
+        ingredients: result.data.ingredients,
+        allergens: result.data.allergens,
+        nutritionGrade: result.data.nutritionGrade,
+        novaGroup: result.data.novaGroup,
+        ecoscore: result.data.ecoscore,
+        nutriments: result.data.nutriments,
+        nutriscore: result.data.nutriscore,
+        scannedAt: new Date(),
+      };
+      
+      // Check if product was already scanned in this session
+      const wasAlreadyScanned = isProductAlreadyScanned(barcode);
+      
+      // Add to scanned products context
+      addScannedProduct(scannedProduct);
+      
+      // Add the new product to current scanned products for display (no limit)
+      setCurrentScannedProducts(prev => {
+        const newList = [scannedProduct, ...prev.filter(p => p.barcode !== scannedProduct.barcode)];
+        return newList;
+      });
+      
+      // Clear waiting state
+      setIsWaitingForAPI(false);
+      
+      // Show success message
+      if (wasAlreadyScanned) {
+        console.log('🔄 Product already scanned - updated in session');
+      } else {
+        console.log('✅ New product scanned successfully');
+      }
       
     } catch (error: any) {
+      // Clear waiting state on error
+      setIsWaitingForAPI(false);
       console.error('🚨 Backend API call failed:', error);
       
-      if (error.message?.includes('401')) {
-        Alert.alert('Authentication Error', 'Please sign in again');
-      } else if (error.message?.includes('404')) {
-        Alert.alert('Product Not Found', 'This barcode is not in our database');
-      } else if (error.message?.includes('429')) {
-        Alert.alert('Rate Limit Exceeded', 'Please wait a moment before scanning again');
+      // Check if it's an API error response
+      if (error.status === 'error') {
+        if (error.message?.includes('401') || error.message?.includes('Authentication')) {
+          Alert.alert('Authentication Error', 'Please sign in again');
+        } else if (error.message?.includes('404') || error.message?.includes('not found') || error.message?.includes('Product not found')) {
+          console.log('❌ Product not found - showing not found message');
+          setShowProductNotFound(true);
+          
+          // Animate in
+          Animated.timing(productNotFoundAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }).start();
+          
+          // Hide the message after 3 seconds
+          setTimeout(() => {
+            Animated.timing(productNotFoundAnim, {
+              toValue: 0,
+              duration: 300,
+              useNativeDriver: true,
+            }).start(() => {
+              setShowProductNotFound(false);
+            });
+          }, 3000);
+        } else if (error.message?.includes('429') || error.message?.includes('rate limit')) {
+          Alert.alert('Rate Limit Exceeded', 'Please wait a moment before scanning again');
+        } else {
+          Alert.alert('Error', error.message || 'Failed to fetch product information. Please try again.');
+        }
+      } else if (error.message) {
+        // Handle other types of errors
+        if (error.message.includes('401')) {
+          Alert.alert('Authentication Error', 'Please sign in again');
+        } else if (error.message.includes('404') || error.message.includes('not found') || error.message.includes('Product not found')) {
+          console.log('❌ Product not found - showing not found message');
+          setShowProductNotFound(true);
+          
+          // Animate in
+          Animated.timing(productNotFoundAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }).start();
+          
+          setTimeout(() => {
+            Animated.timing(productNotFoundAnim, {
+              toValue: 0,
+              duration: 300,
+              useNativeDriver: true,
+            }).start(() => {
+              setShowProductNotFound(false);
+            });
+          }, 3000);
+        } else if (error.message.includes('429')) {
+          Alert.alert('Rate Limit Exceeded', 'Please wait a moment before scanning again');
+        } else {
+          Alert.alert('Error', 'Failed to fetch product information. Please try again.');
+        }
       } else {
         Alert.alert('Error', 'Failed to fetch product information. Please try again.');
       }
@@ -319,20 +416,8 @@ export default function ScanScreen() {
       return;
     }
 
-    // Check if barcode is in the optimal scanning area
-    if (!isInScanArea(data)) {
-      console.log(`⚠️ Barcode ${data} not in optimal scanning area - ignoring`);
-      return;
-    }
-
-    // Assess scan quality
-    const scanQuality = assessScanQuality(data);
-    if (!scanQuality.inArea) {
-      console.log(`⚠️ Barcode ${data} not properly positioned in scan area`);
-      return;
-    }
-
-    console.log(`🎯 Barcode properly positioned in scan area`);
+    // Simple barcode detection - no complex area checking
+    console.log(`🎯 Barcode detected: ${data}`);
 
     // Validate barcode format
     if (!isValidBarcode(data)) {
@@ -374,6 +459,20 @@ export default function ScanScreen() {
     setLastScannedCode(data);
     setShowSuccessIndicator(true);
     
+    // Animate success indicator in
+    Animated.spring(successIndicatorAnim, {
+      toValue: 1,
+      tension: 100,
+      friction: 8,
+      useNativeDriver: true,
+    }).start();
+    
+    // Don't create icon yet - wait for API success
+    console.log('🎯 Barcode scanned, waiting for API response...');
+    
+    // Set waiting state
+    setIsWaitingForAPI(true);
+    
     // Disable scanning temporarily to prevent spam
     setIsScanningEnabled(false);
     console.log('🚫 Scanning disabled - starting cooldown period');
@@ -386,7 +485,13 @@ export default function ScanScreen() {
     
     // Hide the success indicator after 2 seconds
     setTimeout(() => {
-      setShowSuccessIndicator(false);
+      Animated.timing(successIndicatorAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }).start(() => {
+        setShowSuccessIndicator(false);
+      });
     }, 2000);
     
     // Re-enable scanning after 3 seconds to prevent rapid-fire scanning
@@ -429,6 +534,32 @@ export default function ScanScreen() {
     console.log('📊 === END EXPORT ===');
   };
 
+  // Function to handle icon click and show product info
+  const handleIconPress = (product: ScannedProduct) => {
+    setSelectedProduct(product);
+    setIsDrawerVisible(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
+
+  // Function to close the product info drawer
+  const closeDrawer = () => {
+    setIsDrawerVisible(false);
+    setSelectedProduct(null);
+  };
+
+  // Render item for FlatList with enhanced animations
+  const renderProductIcon = ({ item, index }: { item: ScannedProduct; index: number }) => {
+    return (
+      <Pressable onPress={() => handleIconPress(item)}>
+        <ScannedProductIcon 
+          key={item.barcode}
+          product={item} 
+          position="left"
+        />
+      </Pressable>
+    );
+  };
+
   if (!permission) {
     return (
       <View className="flex-1 items-center justify-center bg-black">
@@ -443,7 +574,7 @@ export default function ScanScreen() {
         <Text className="text-white text-lg text-center mb-4">
           Camera access is required to scan barcodes
         </Text>
-        <Text className="text-gray-400 text-sm text-center">
+        <Text className="text-gray-400 text-sm text-center px-8">
           Please grant camera permission to use the scanner
         </Text>
       </View>
@@ -539,11 +670,45 @@ export default function ScanScreen() {
         </View>
       )}
       
+      {/* Product Icons Display - Horizontal Scrollable Carousel - Outside pointer-events-none container */}
+      {currentScannedProducts.length > 0 && (
+        <View className="absolute top-32 left-0 right-0 h-52 z-50 bg-black bg-opacity-80 items-center justify-center">
+          <FlatList
+            ref={flatListRef}
+            data={currentScannedProducts}
+            renderItem={renderProductIcon}
+            keyExtractor={(item) => item.barcode}
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingHorizontal: 16, alignItems: 'center' }}
+            snapToInterval={104} // 80px icon + 24px spacing
+            decelerationRate="fast"
+            bounces={false}
+            scrollEnabled={true}
+            // Enhanced scroll animations
+            scrollEventThrottle={16}
+            onScrollBeginDrag={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            onMomentumScrollEnd={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+          />
+        </View>
+      )}
+      
       <View className="absolute inset-0 pointer-events-none">
+        {/* Placeholder when no products are scanned yet */}
+        {currentScannedProducts.length === 0 && (
+          <View className="absolute top-40 left-4 bg-gray-800 bg-opacity-60 px-3 py-2 rounded-full">
+            <Text className="text-gray-300 text-xs">
+              Scan a product to see it here
+            </Text>
+          </View>
+        )}
+        
         <View 
-          className={`border-2 rounded-lg bg-transparent absolute ${
-            scanAreaActive ? 'border-green-400 border-4' : 'border-accent'
-          }`}
+          className="border-2 rounded-lg bg-transparent absolute border-accent"
           style={{ 
             width: screenWidth * 0.8, 
             height: screenWidth * 0.8 * 0.6,
@@ -558,11 +723,47 @@ export default function ScanScreen() {
         <View className="absolute bottom-36 left-0 right-0 items-center px-5 pointer-events-none">
           {/* Success indicator */}
           {showSuccessIndicator && lastScannedCode && (
-            <View className="bg-green-500 px-4 py-2 rounded-full mb-4 pointer-events-none">
+            <Animated.View 
+              className="bg-green-500 px-4 py-2 rounded-full mb-4 pointer-events-none"
+              style={{
+                opacity: successIndicatorAnim,
+                transform: [{ scale: successIndicatorAnim }],
+              }}
+            >
               <Text className="text-white text-sm font-semibold text-center">
                 ✓ Scanned: {lastScannedCode.substring(0, 8)}...
               </Text>
-            </View>
+            </Animated.View>
+          )}
+          
+          {/* Processing indicator */}
+          {isWaitingForAPI && (
+            <Animated.View 
+              className="bg-blue-500 px-4 py-2 rounded-full mb-4 pointer-events-none"
+              style={{
+                opacity: 1,
+                transform: [{ scale: 1 }],
+              }}
+            >
+              <Text className="text-white text-sm font-semibold text-center">
+                🔄 Processing scanned item...
+              </Text>
+            </Animated.View>
+          )}
+          
+          {/* Product not found message */}
+          {showProductNotFound && (
+            <Animated.View 
+              className="bg-orange-500 px-4 py-2 rounded-full mb-4 pointer-events-none"
+              style={{
+                opacity: productNotFoundAnim,
+                transform: [{ scale: productNotFoundAnim }],
+              }}
+            >
+              <Text className="text-white text-sm font-semibold text-center">
+                ⚠️ Scanned item does not exist
+              </Text>
+            </Animated.View>
           )}
           
           <Text className="text-gray-300 text-sm text-center mb-2">
@@ -574,6 +775,13 @@ export default function ScanScreen() {
         </View>
         
       </View>
+      
+      {/* Product Info Drawer */}
+      <ProductInfoDrawer
+        product={selectedProduct}
+        isVisible={isDrawerVisible}
+        onClose={closeDrawer}
+      />
     </View>
   );
 }

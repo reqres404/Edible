@@ -37,9 +37,22 @@ class ApiService {
       console.log(`📡 Response status: ${response.status}`);
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ API Error: ${response.status} - ${errorText}`);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          const errorText = await response.text();
+          errorData = { message: errorText };
+        }
+        
+        console.error(`❌ API Error: ${response.status} - ${JSON.stringify(errorData)}`);
+        
+        // Create error object that matches backend error structure
+        const error = new Error() as any;
+        error.status = 'error';
+        error.message = errorData.message || `HTTP error! status: ${response.status}`;
+        error.statusCode = response.status;
+        throw error;
       }
       
       const data = await response.json();
@@ -70,9 +83,22 @@ class ApiService {
       );
       
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error(`❌ Search API Error: ${response.status} - ${errorText}`);
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          const errorText = await response.text();
+          errorData = { message: errorText };
+        }
+        
+        console.error(`❌ Search API Error: ${response.status} - ${JSON.stringify(errorData)}`);
+        
+        // Create error object that matches backend error structure
+        const error = new Error() as any;
+        error.status = 'error';
+        error.message = errorData.message || `HTTP error! status: ${response.status}`;
+        error.statusCode = response.status;
+        throw error;
       }
       
       const data = await response.json();
@@ -98,7 +124,22 @@ class ApiService {
       });
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          const errorText = await response.text();
+          errorData = { message: errorText };
+        }
+        
+        console.error(`❌ Rate Limit API Error: ${response.status} - ${JSON.stringify(errorData)}`);
+        
+        // Create error object that matches backend error structure
+        const error = new Error() as any;
+        error.status = 'error';
+        error.message = errorData.message || `HTTP error! status: ${response.status}`;
+        error.statusCode = response.status;
+        throw error;
       }
       
       return await response.json();
@@ -116,7 +157,22 @@ class ApiService {
       const response = await fetch(`${this.getBaseUrl()}/api/v1/barcode/health`);
       
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          const errorText = await response.text();
+          errorData = { message: errorText };
+        }
+        
+        console.error(`❌ Health Check API Error: ${response.status} - ${JSON.stringify(errorData)}`);
+        
+        // Create error object that matches backend error structure
+        const error = new Error() as any;
+        error.status = 'error';
+        error.message = errorData.message || `HTTP error! status: ${response.status}`;
+        error.statusCode = response.status;
+        throw error;
       }
       
       return await response.json();
@@ -128,3 +184,4 @@ class ApiService {
 }
 
 export const apiService = new ApiService();
+

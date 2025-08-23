@@ -13,6 +13,8 @@
    ```
    npm run reset-project
 
+   npx run prebuild
+   npx expo run:android
 -- run emulator on windows
 
    emulator -avd Pixel_6_API_34 

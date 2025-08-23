@@ -3,6 +3,7 @@ import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { ScannedProductsProvider } from "../contexts/ScannedProductsContext";
 import LoadingScreen from "../components/LoadingScreen";
 import "./globals.css";
 
@@ -60,9 +61,11 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <SafeAreaProvider>
-        <RootLayoutNav />
-      </SafeAreaProvider>
+      <ScannedProductsProvider>
+        <SafeAreaProvider>
+          <RootLayoutNav />
+        </SafeAreaProvider>
+      </ScannedProductsProvider>
     </AuthProvider>
   );
 }
