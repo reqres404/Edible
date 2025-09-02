@@ -3,7 +3,8 @@ import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { BarcodeScanningResult, CameraView, useCameraPermissions } from "expo-camera";
 import * as Haptics from 'expo-haptics';
 import React, { useEffect, useRef, useState } from "react";
-import { Dimensions, Platform, Pressable, Text, View, Alert, Animated, FlatList } from "react-native";
+import { Dimensions, Platform, Pressable, Text, View, Alert, Animated, FlatList, Easing } from "react-native";
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from "@/contexts/AuthContext";
 import { useScannedProducts, ScannedProduct } from "@/contexts/ScannedProductsContext";
 import { apiService } from "@/services/api";
@@ -27,12 +28,15 @@ export default function ScanScreen() {
   const [isWaitingForAPI, setIsWaitingForAPI] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<ScannedProduct | null>(null);
   const [isDrawerVisible, setIsDrawerVisible] = useState(false);
+  const [selectedProductIndex, setSelectedProductIndex] = useState(0);
   const productNotFoundAnim = useRef(new Animated.Value(0)).current;
+  const iconsPositionAnim = useRef(new Animated.Value(0)).current;
   const cameraRef = useRef<CameraView>(null);
   const flatListRef = useRef<FlatList>(null);
   const isFocused = useIsFocused();
   const { getCurrentToken } = useAuth();
   const { addScannedProduct, isProductAlreadyScanned, scannedProducts } = useScannedProducts();
+  const insets = useSafeAreaInsets();
   
   // Barcode validation functions
   const isValidBarcode = (code: string): boolean => {
@@ -536,8 +540,19 @@ export default function ScanScreen() {
 
   // Function to handle icon click and show product info
   const handleIconPress = (product: ScannedProduct) => {
+    const productIndex = currentScannedProducts.findIndex(p => p.barcode === product.barcode);
     setSelectedProduct(product);
+    setSelectedProductIndex(productIndex);
     setIsDrawerVisible(true);
+    
+    // Start both animations simultaneously - icons move quickly to clear space
+    Animated.timing(iconsPositionAnim, {
+      toValue: 1,
+      duration: 180, // Reduced from 250ms
+      easing: Easing.out(Easing.cubic), // Smooth deceleration
+      useNativeDriver: true,
+    }).start();
+    
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
   };
 
@@ -545,6 +560,32 @@ export default function ScanScreen() {
   const closeDrawer = () => {
     setIsDrawerVisible(false);
     setSelectedProduct(null);
+    
+    // Animate icons back to original position after drawer starts closing
+    setTimeout(() => {
+      Animated.timing(iconsPositionAnim, {
+        toValue: 0,
+        duration: 150, // Reduced from 200ms
+        easing: Easing.in(Easing.cubic), // Smooth acceleration
+        useNativeDriver: true,
+      }).start();
+    }, 50); // Reduced delay from 100ms to 50ms
+  };
+
+  // Function to switch between products
+  const handleSwitchProduct = (direction: 'left' | 'right') => {
+    if (currentScannedProducts.length <= 1) return;
+    
+    let newIndex = selectedProductIndex;
+    if (direction === 'right') {
+      newIndex = (selectedProductIndex + 1) % currentScannedProducts.length;
+    } else {
+      newIndex = selectedProductIndex === 0 ? currentScannedProducts.length - 1 : selectedProductIndex - 1;
+    }
+    
+    setSelectedProductIndex(newIndex);
+    setSelectedProduct(currentScannedProducts[newIndex]);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   // Render item for FlatList with enhanced animations
@@ -670,9 +711,20 @@ export default function ScanScreen() {
         </View>
       )}
       
-      {/* Product Icons Display - Horizontal Scrollable Carousel - Outside pointer-events-none container */}
-      {currentScannedProducts.length > 0 && (
-        <View className="absolute top-32 left-0 right-0 h-52 z-50 bg-black bg-opacity-80 items-center justify-center">
+      {/* Product Icons Display - Horizontal Scrollable Carousel - Always visible with consistent height */}
+      <Animated.View 
+        className="absolute left-0 right-0 h-52 z-40 bg-black bg-opacity-80 items-center justify-center"
+        style={{
+          transform: [{
+            translateY: iconsPositionAnim.interpolate({
+              inputRange: [0, 1],
+              outputRange: [0, -120], // Move up enough to clear the drawer (85% of screen height)
+            })
+          }],
+          top: Math.max(100, insets.top + 60), // Stay in safe area with minimum spacing
+        }}
+      >
+        {currentScannedProducts.length > 0 ? (
           <FlatList
             ref={flatListRef}
             data={currentScannedProducts}
@@ -680,7 +732,7 @@ export default function ScanScreen() {
             keyExtractor={(item) => item.barcode}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 16, alignItems: 'center' }}
+            contentContainerStyle={{ paddingHorizontal: 16, alignItems: 'center', marginTop: 55 }}
             snapToInterval={104} // 80px icon + 24px spacing
             decelerationRate="fast"
             bounces={false}
@@ -694,18 +746,14 @@ export default function ScanScreen() {
               Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             }}
           />
-        </View>
-      )}
-      
-      <View className="absolute inset-0 pointer-events-none">
-        {/* Placeholder when no products are scanned yet */}
-        {currentScannedProducts.length === 0 && (
-          <View className="absolute top-40 left-4 bg-gray-800 bg-opacity-60 px-3 py-2 rounded-full">
-            <Text className="text-gray-300 text-xs">
-              Scan a product to see it here
-            </Text>
+        ) : (
+          <View className="flex-1 items-center justify-center">
+            <Text className="text-gray-400 text-sm">Scan products to see them here</Text>
           </View>
         )}
+      </Animated.View>
+      
+      <View className="absolute inset-0 pointer-events-none">
         
         <View 
           className="border-2 rounded-lg bg-transparent absolute border-accent"
@@ -781,6 +829,9 @@ export default function ScanScreen() {
         product={selectedProduct}
         isVisible={isDrawerVisible}
         onClose={closeDrawer}
+        onSwitchProduct={handleSwitchProduct}
+        hasNextProduct={currentScannedProducts.length > 1}
+        hasPreviousProduct={currentScannedProducts.length > 1}
       />
     </View>
   );

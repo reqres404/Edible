@@ -2,6 +2,7 @@ import { useFonts } from "expo-font";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 import { SafeAreaProvider } from "react-native-safe-area-context";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { ScannedProductsProvider } from "../contexts/ScannedProductsContext";
 import LoadingScreen from "../components/LoadingScreen";
@@ -60,12 +61,14 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <ScannedProductsProvider>
-        <SafeAreaProvider>
-          <RootLayoutNav />
-        </SafeAreaProvider>
-      </ScannedProductsProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <ScannedProductsProvider>
+          <SafeAreaProvider>
+            <RootLayoutNav />
+          </SafeAreaProvider>
+        </ScannedProductsProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }

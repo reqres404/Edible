@@ -1,11 +1,15 @@
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Image, ScrollView, Pressable, Dimensions, Animated } from 'react-native';
+import { View, Text, Image, ScrollView, Pressable, Dimensions, Animated, Easing } from 'react-native';
+import { PanGestureHandler, State, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ScannedProduct } from '@/contexts/ScannedProductsContext';
 
 interface ProductInfoDrawerProps {
   product: ScannedProduct | null;
   isVisible: boolean;
   onClose: () => void;
+  onSwitchProduct?: (direction: 'left' | 'right') => void;
+  hasNextProduct?: boolean;
+  hasPreviousProduct?: boolean;
 }
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
@@ -13,78 +17,129 @@ const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({ 
   product, 
   isVisible, 
-  onClose 
+  onClose,
+  onSwitchProduct,
+  hasNextProduct = false,
+  hasPreviousProduct = false
 }) => {
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
+  const panGestureRef = useRef<PanGestureHandler>(null);
 
   useEffect(() => {
-    if (isVisible && product) {
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 400,
-        useNativeDriver: true,
-      }).start();
-
-      Animated.timing(backdropAnim, {
-        toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
+    if (isVisible) {
+      // Fast timing animation for opening with easing
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 200, // Reduced from 300ms
+          easing: Easing.out(Easing.cubic), // Smooth deceleration
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropAnim, {
+          toValue: 1,
+          duration: 150, // Reduced from 250ms
+          easing: Easing.out(Easing.quad), // Gentle fade in
+          useNativeDriver: true,
+        }),
+      ]).start();
     } else {
+      // Fast timing animation for closing with easing
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: screenHeight,
-          duration: 300,
+          duration: 180, // Reduced from 250ms
+          easing: Easing.in(Easing.cubic), // Smooth acceleration
           useNativeDriver: true,
         }),
         Animated.timing(backdropAnim, {
           toValue: 0,
-          duration: 200,
+          duration: 120, // Reduced from 200ms
+          easing: Easing.in(Easing.quad), // Quick fade out
           useNativeDriver: true,
         }),
       ]).start();
     }
-  }, [isVisible, product]);
+  }, [isVisible]);
 
-  // Don't render if no product or not visible
-  if (!product || !isVisible) {
+  // Handle pan gestures for swipe down to close and swipe left/right to switch products
+  const handlePanGesture = (event: any) => {
+    const { translationY, translationX, velocityY, velocityX, state } = event.nativeEvent;
+    
+    if (state === State.END) {
+      // Swipe down to close (threshold: 100px or velocity > 500)
+      if (translationY > 100 || velocityY > 500) {
+        onClose();
+        return;
+      }
+      
+      // Swipe left to go to next product (threshold: 100px or velocity > 500)
+      if (translationX < -100 || velocityX < -500) {
+        if (hasNextProduct && onSwitchProduct) {
+          onSwitchProduct('right');
+        }
+        return;
+      }
+      
+      // Swipe right to go to previous product (threshold: 100px or velocity > 500)
+      if (translationX > 100 || velocityX > 500) {
+        if (hasPreviousProduct && onSwitchProduct) {
+          onSwitchProduct('left');
+        }
+        return;
+      }
+    }
+  };
+
+  // Always render the drawer container to maintain consistent height
+  if (!isVisible) {
     return null;
   }
 
-  // Don't render if no nutrition data
-  if (!product.nutriments || Object.keys(product.nutriments).length === 0) {
+  // Handle case when no product is selected or no nutrition data
+  if (!product || !product.nutriments || Object.keys(product.nutriments).length === 0) {
     return (
       <>
         <Animated.View 
-          className="absolute inset-0 bg-black/60 z-40"
+          className="absolute inset-0 bg-black/60 z-45"
           style={{ opacity: backdropAnim }}
         >
           <Pressable onPress={onClose} className="w-full h-full" />
         </Animated.View>
         
-        <Animated.View 
-          className="absolute bottom-0 left-0 right-0 bg-[#0F172A] rounded-t-3xl z-50"
-          style={{
-            transform: [{ translateY: slideAnim }],
-            maxHeight: screenHeight * 0.85,
-          }}
+        <PanGestureHandler
+          ref={panGestureRef}
+          onHandlerStateChange={handlePanGesture}
+          onGestureEvent={handlePanGesture}
+          activeOffsetY={[-10, 10]}
+          activeOffsetX={[-10, 10]}
+          failOffsetX={[-50, 50]}
         >
-          <View className="w-12 h-1 bg-gray-400 rounded-full mx-auto mt-3 mb-4" />
-          
-          <View className="px-6 py-4">
-            <Text className="text-white text-lg font-bold mb-4">Content Overview</Text>
-            <View className="bg-[#1E293B] rounded-2xl p-8 items-center justify-center">
-              <Text className="text-gray-300 text-center">No nutrition data available</Text>
+          <Animated.View 
+            className="absolute bottom-0 left-0 right-0 bg-[#0F172A] rounded-t-3xl z-50"
+            style={{
+              transform: [{ translateY: slideAnim }],
+              height: screenHeight * 0.85, // Reduced height to leave some camera view
+            }}
+          >
+            <View className="w-12 h-1 bg-gray-400 rounded-full mx-auto mt-3 mb-4" />
+            
+            <View className="px-6 py-4">
+              <Text className="text-white text-lg font-bold mb-4">Content Overview</Text>
+              <View className="bg-[#1E293B] rounded-2xl p-8 items-center justify-center" style={{ height: 200 }}>
+                <Text className="text-gray-300 text-center">
+                  {!product ? 'Select a product to view details' : 'No nutrition data available'}
+                </Text>
+              </View>
             </View>
-          </View>
 
-          <View className="px-6 py-4 border-t border-gray-700">
-            <Pressable onPress={onClose} className="bg-blue-600 py-3 rounded-2xl items-center">
-              <Text className="text-white font-semibold text-lg">Close</Text>
-            </Pressable>
-          </View>
-        </Animated.View>
+            <View className="px-6 py-4 border-t border-gray-700">
+              <Pressable onPress={onClose} className="bg-blue-600 py-3 rounded-2xl items-center">
+                <Text className="text-white font-semibold text-lg">Close</Text>
+              </Pressable>
+            </View>
+          </Animated.View>
+        </PanGestureHandler>
       </>
     );
   }
@@ -163,19 +218,27 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
   return (
     <>
       <Animated.View 
-        className="absolute inset-0 bg-black/60 z-40"
+        className="absolute inset-0 bg-black/60 z-45"
         style={{ opacity: backdropAnim }}
       >
         <Pressable onPress={onClose} className="w-full h-full" />
       </Animated.View>
       
-      <Animated.View 
-        className="absolute bottom-0 left-0 right-0 bg-[#0F172A] rounded-t-3xl z-50"
-        style={{
-          transform: [{ translateY: slideAnim }],
-          maxHeight: screenHeight * 0.85,
-        }}
+      <PanGestureHandler
+        ref={panGestureRef}
+        onHandlerStateChange={handlePanGesture}
+        onGestureEvent={handlePanGesture}
+        activeOffsetY={[-10, 10]}
+        activeOffsetX={[-10, 10]}
+        failOffsetX={[-50, 50]}
       >
+        <Animated.View 
+          className="absolute bottom-0 left-0 right-0 bg-[#0F172A] rounded-t-3xl z-50"
+          style={{
+            transform: [{ translateY: slideAnim }],
+            height: screenHeight * 0.85, // Reduced height to leave some camera view
+          }}
+        >
         <View className="w-12 h-1 bg-gray-400 rounded-full mx-auto mt-3 mb-4" />
         
         <ScrollView className="flex-1 px-6 py-4" showsVerticalScrollIndicator={false}>
@@ -293,7 +356,8 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
             <Text className="text-white font-semibold text-lg">Close</Text>
           </Pressable>
         </View>
-      </Animated.View>
+        </Animated.View>
+      </PanGestureHandler>
     </>
   );
 };
