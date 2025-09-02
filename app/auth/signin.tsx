@@ -3,15 +3,9 @@ import { useState } from "react";
 import { View, Text, Alert, Image, TouchableOpacity } from "react-native";
 import { useRouter } from "expo-router";
 import { useAuth } from "../../contexts/AuthContext";
+import { apiService } from "../../services/api";
 
-// Configure Google Sign-In
-GoogleSignin.configure({
-  webClientId:
-    process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID_WEB ||
-    process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID ||
-    undefined,
-  offlineAccess: true,
-});
+
 
 const SignInScreen = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -31,12 +25,41 @@ const SignInScreen = () => {
       if (isSuccessResponse(response)) {
         const userData = {
           id: response.data.user.id,
+          googleId: response.data.user.id,
           email: response.data.user.email || '',
           name: response.data.user.name || 'User',
-          photo: response.data.user.photo,
+          picture: response.data.user.photo,
+          profiles: [{
+            name: response.data.user.name || 'User',
+            age: undefined,
+            conditions: [],
+            lifestyle: undefined,
+          }],
+          scannedCodes: [],
         };
         
         await signIn(userData);
+        
+        // Automatically sync user data with backend
+        try {
+          const token = await GoogleSignin.getTokens();
+          if (token.idToken) {
+            // Call the backend to create/update user
+            await apiService.createOrUpdateUser({
+              googleId: userData.googleId,
+              email: userData.email,
+              name: userData.name,
+              picture: userData.picture,
+              profiles: userData.profiles,
+              scannedCodes: userData.scannedCodes,
+            }, token.idToken);
+            console.log('User synced with backend successfully');
+          }
+        } catch (syncError) {
+          console.error('Error syncing with backend:', syncError);
+          // Continue anyway - user is signed in locally
+        }
+        
         router.replace("/(tabs)");
       } else {
         console.log("Sign in was cancelled by user");

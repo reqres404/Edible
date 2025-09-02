@@ -2,12 +2,6 @@ import {GoogleSignin,GoogleSigninButton,statusCodes,isSuccessResponse,isErrorWit
 import { useState } from "react";
 import { View,Text, Alert } from "react-native";
 
-GoogleSignin.configure()
-
-GoogleSignin.configure({
-    webClientId: process.env.EXPO_PUBLIC_GOOGLE_CLIENT_ID,
-  });
-
 const authPage = () => {
     const [userInfo, setUserInfo] = useState<any>(null);
     const handleGoogleSignIn = async () =>{

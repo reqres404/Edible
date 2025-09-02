@@ -2,7 +2,6 @@ import React from 'react';
 import { Text, View, ScrollView, Pressable } from 'react-native';
 import { useScannedProducts } from '@/contexts/ScannedProductsContext';
 import { ScannedProductCard } from '@/components/ScannedProductCard';
-import TopBar from '@/components/TopBar';
 
 const Saved = () => {
   const { scannedProducts, clearScannedProducts, removeScannedProduct } = useScannedProducts();
@@ -18,7 +17,6 @@ const Saved = () => {
 
   return (
     <View className="flex-1 bg-offwhite">
-      <TopBar />
       {/* Header */}
       <View className="bg-white px-6 py-4 border-b border-gray-200">
         <View className="flex-row items-center justify-between">

@@ -46,7 +46,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const visibleRoutes = state.routes.filter((r) => r.name !== "scan");
 
   return (
-    <View className="absolute left-0 right-0 bottom-6 mx-5">
+    <View className="absolute left-0 right-0 bottom-2 mx-5">
       <View className="flex-row items-center justify-between bg-primary rounded-full h-16 px-8 mb-4 overflow-hidden">
         {/* Distribute icons with an invisible spacer to reserve the center area */}
         {(() => {

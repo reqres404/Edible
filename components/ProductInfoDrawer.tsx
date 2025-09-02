@@ -8,7 +8,7 @@ interface ProductInfoDrawerProps {
   onClose: () => void;
 }
 
-const { height: screenHeight } = Dimensions.get('window');
+const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
 
 export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({ 
   product, 
@@ -17,142 +17,21 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
 }) => {
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
-  const contentAnim = useRef(new Animated.Value(0)).current;
-  const imageScaleAnim = useRef(new Animated.Value(0.8)).current;
-  const headerSlideAnim = useRef(new Animated.Value(30)).current;
-  const nutritionSlideAnim = useRef(new Animated.Value(40)).current;
-  const categoriesSlideAnim = useRef(new Animated.Value(50)).current;
-  const ingredientsSlideAnim = useRef(new Animated.Value(60)).current;
-  const allergensSlideAnim = useRef(new Animated.Value(70)).current;
-  const additionalSlideAnim = useRef(new Animated.Value(80)).current;
-  const buttonScaleAnim = useRef(new Animated.Value(0.9)).current;
-  const handleScaleAnim = useRef(new Animated.Value(0.8)).current;
-  const handleOpacityAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    if (isVisible) {
-      // Reset all animations
-      contentAnim.setValue(0);
-      imageScaleAnim.setValue(0.8);
-      headerSlideAnim.setValue(30);
-      nutritionSlideAnim.setValue(40);
-      categoriesSlideAnim.setValue(50);
-      ingredientsSlideAnim.setValue(60);
-      allergensSlideAnim.setValue(70);
-      additionalSlideAnim.setValue(80);
-      buttonScaleAnim.setValue(0.9);
-      handleScaleAnim.setValue(0.8);
-      handleOpacityAnim.setValue(0);
-
-      // Main slide up animation
+    if (isVisible && product) {
       Animated.timing(slideAnim, {
         toValue: 0,
         duration: 400,
         useNativeDriver: true,
       }).start();
 
-      // Backdrop fade in
       Animated.timing(backdropAnim, {
         toValue: 1,
         duration: 300,
         useNativeDriver: true,
       }).start();
-
-      // Staggered content animations
-      setTimeout(() => {
-        Animated.parallel([
-          Animated.spring(imageScaleAnim, {
-            toValue: 1,
-            tension: 100,
-            friction: 8,
-            useNativeDriver: true,
-          }),
-          Animated.timing(headerSlideAnim, {
-            toValue: 0,
-            duration: 400,
-            useNativeDriver: true,
-          }),
-          Animated.parallel([
-            Animated.spring(handleScaleAnim, {
-              toValue: 1,
-              tension: 120,
-              friction: 6,
-              useNativeDriver: true,
-            }),
-            Animated.timing(handleOpacityAnim, {
-              toValue: 1,
-              duration: 300,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]).start();
-      }, 100);
-
-      setTimeout(() => {
-        Animated.timing(contentAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
-      }, 200);
-
-      // Staggered section animations
-      setTimeout(() => {
-        Animated.spring(nutritionSlideAnim, {
-          toValue: 0,
-          tension: 80,
-          friction: 8,
-          useNativeDriver: true,
-        }).start();
-      }, 300);
-
-      setTimeout(() => {
-        Animated.spring(categoriesSlideAnim, {
-          toValue: 0,
-          tension: 80,
-          friction: 8,
-          useNativeDriver: true,
-        }).start();
-      }, 400);
-
-      setTimeout(() => {
-        Animated.spring(ingredientsSlideAnim, {
-          toValue: 0,
-          tension: 80,
-          friction: 8,
-          useNativeDriver: true,
-        }).start();
-      }, 500);
-
-      setTimeout(() => {
-        Animated.spring(allergensSlideAnim, {
-          toValue: 0,
-          tension: 80,
-          friction: 8,
-          useNativeDriver: true,
-        }).start();
-      }, 600);
-
-      setTimeout(() => {
-        Animated.spring(additionalSlideAnim, {
-          toValue: 0,
-          tension: 80,
-          friction: 8,
-          useNativeDriver: true,
-        }).start();
-      }, 700);
-
-      setTimeout(() => {
-        Animated.spring(buttonScaleAnim, {
-          toValue: 1,
-          tension: 100,
-          friction: 8,
-          useNativeDriver: true,
-        }).start();
-      }, 800);
-
     } else {
-      // Slide down animation
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: screenHeight,
@@ -166,279 +45,259 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
         }),
       ]).start();
     }
-  }, [isVisible]);
+  }, [isVisible, product]);
 
-  // Safety check - don't render if no product
-  if (!product) return null;
+  // Don't render if no product or not visible
+  if (!product || !isVisible) {
+    return null;
+  }
 
-  const getScoreColor = (grade?: string) => {
-    switch (grade?.toLowerCase()) {
-      case 'a': return 'text-green-500';
-      case 'b': return 'text-blue-500';
-      case 'c': return 'text-yellow-500';
-      case 'd': return 'text-orange-500';
-      case 'e': return 'text-red-500';
-      default: return 'text-gray-400';
-    }
-  };
-
-  const getScoreBackground = (grade?: string) => {
-    switch (grade?.toLowerCase()) {
-      case 'a': return 'bg-green-100';
-      case 'b': return 'bg-blue-100';
-      case 'c': return 'bg-yellow-100';
-      case 'd': return 'bg-orange-100';
-      case 'e': return 'bg-red-100';
-      default: return 'bg-gray-100';
-    }
-  };
-
-  return (
-    <>
-      {/* Backdrop */}
-      <Animated.View 
-        className="absolute inset-0 bg-black z-40"
-        style={{ opacity: backdropAnim }}
-      >
-        <Pressable 
-          onPress={onClose}
-          className="w-full h-full"
-        />
-      </Animated.View>
-      
-      {/* Drawer */}
-      <Animated.View 
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50"
-        style={{
-          transform: [{ translateY: slideAnim }],
-          maxHeight: screenHeight * 0.8,
-        }}
-      >
-        {/* Handle */}
+  // Don't render if no nutrition data
+  if (!product.nutriments || Object.keys(product.nutriments).length === 0) {
+    return (
+      <>
         <Animated.View 
-          style={{
-            transform: [{ scale: handleScaleAnim }],
-            opacity: handleOpacityAnim,
-          }}
+          className="absolute inset-0 bg-black/60 z-40"
+          style={{ opacity: backdropAnim }}
         >
-          <View className="w-12 h-1 bg-gray-300 rounded-full mx-auto mt-3 mb-4" />
+          <Pressable onPress={onClose} className="w-full h-full" />
         </Animated.View>
         
-        {/* Product Header */}
         <Animated.View 
+          className="absolute bottom-0 left-0 right-0 bg-[#0F172A] rounded-t-3xl z-50"
           style={{
-            transform: [{ translateY: headerSlideAnim }],
-            opacity: contentAnim,
+            transform: [{ translateY: slideAnim }],
+            maxHeight: screenHeight * 0.85,
           }}
         >
-          <View className="px-6 pb-4 border-b border-gray-200">
-            <View className="flex-row items-start space-x-4">
-              {/* Product Image */}
-              <Animated.View 
-                style={{
-                  transform: [{ scale: imageScaleAnim }],
-                  opacity: contentAnim,
-                }}
-              >
-                <View className="w-24 h-24 rounded-2xl overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600">
-                  {product.imageUrl ? (
-                    <Image
-                      source={{ uri: product.imageUrl, cache: 'force-cache' }}
-                      className="w-full h-full"
-                      resizeMode="cover"
-                    />
-                  ) : (
-                    <View className="w-full h-full items-center justify-center">
-                      <Text className="text-white text-xs font-bold text-center">
-                        {product.name?.substring(0, 4) || 'SCAN'}
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              </Animated.View>
-              
-              {/* Product Info */}
-              <Animated.View 
-                style={{
-                  transform: [{ translateY: headerSlideAnim }],
-                  opacity: contentAnim,
-                }}
-              >
-                <View className="flex-1">
-                  <Text className="text-xl font-bold text-gray-900 mb-1">
-                    {product.name || 'Unknown Product'}
-                  </Text>
-                  {product.brand && (
-                    <Text className="text-gray-600 text-sm mb-2">
-                      {product.brand}
-                    </Text>
-                  )}
-                  
-                  {/* Score Badge */}
-                  <View className={`px-3 py-1 rounded-full ${getScoreBackground(product.nutriscore?.grade || product.nutritionGrade)}`}>
-                    <Text className={`text-sm font-bold ${getScoreColor(product.nutriscore?.grade || product.nutritionGrade)}`}>
-                      {product.nutriscore?.grade || product.nutritionGrade || '⏳'}
-                    </Text>
-                  </View>
-                </View>
-              </Animated.View>
+          <View className="w-12 h-1 bg-gray-400 rounded-full mx-auto mt-3 mb-4" />
+          
+          <View className="px-6 py-4">
+            <Text className="text-white text-lg font-bold mb-4">Content Overview</Text>
+            <View className="bg-[#1E293B] rounded-2xl p-8 items-center justify-center">
+              <Text className="text-gray-300 text-center">No nutrition data available</Text>
             </View>
           </View>
-        </Animated.View>
 
-        {/* Product Details */}
-        <ScrollView className="flex-1 px-6 py-4" showsVerticalScrollIndicator={false}>
-          {/* Nutrition Information */}
-          <Animated.View 
-            style={{
-              transform: [{ translateY: nutritionSlideAnim }],
-              opacity: contentAnim,
-            }}
-          >
-            {product.nutriments && (
-              <View className="mb-6">
-                <Text className="text-lg font-semibold text-gray-900 mb-3">Nutrition Facts</Text>
-                <View className="space-y-2">
-                  {product.nutriments.energy_kcal_100g && (
-                    <View className="flex-row justify-between">
-                      <Text className="text-gray-600">Energy</Text>
-                      <Text className="font-medium">{product.nutriments.energy_kcal_100g} kcal</Text>
-                    </View>
-                  )}
-                  {product.nutriments.proteins_100g && (
-                    <View className="flex-row justify-between">
-                      <Text className="text-gray-600">Protein</Text>
-                      <Text className="font-medium">{product.nutriments.proteins_100g}g</Text>
-                    </View>
-                  )}
-                  {product.nutriments.carbohydrates_100g && (
-                    <View className="flex-row justify-between">
-                      <Text className="text-gray-600">Carbohydrates</Text>
-                      <Text className="font-medium">{product.nutriments.carbohydrates_100g}g</Text>
-                    </View>
-                  )}
-                  {product.nutriments.fat_100g && (
-                    <View className="flex-row justify-between">
-                      <Text className="text-gray-600">Fat</Text>
-                      <Text className="font-medium">{product.nutriments.fat_100g}g</Text>
-                    </View>
-                  )}
-                </View>
-              </View>
-            )}
-          </Animated.View>
-
-          {/* Categories */}
-          <Animated.View 
-            style={{
-              transform: [{ translateY: categoriesSlideAnim }],
-              opacity: contentAnim,
-            }}
-          >
-            {product.categories && product.categories.length > 0 && (
-              <View className="mb-6">
-                <Text className="text-lg font-semibold text-gray-900 mb-3">Categories</Text>
-                <View className="flex-row flex-wrap">
-                  {product.categories.map((category, index) => (
-                    <View key={index} className="bg-gray-100 px-3 py-1 rounded-full mr-2 mb-2">
-                      <Text className="text-sm text-gray-700">{category}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-          </Animated.View>
-
-          {/* Ingredients */}
-          <Animated.View 
-            style={{
-              transform: [{ translateY: ingredientsSlideAnim }],
-              opacity: contentAnim,
-            }}
-          >
-            {product.ingredients && (
-              <View className="mb-6">
-                <Text className="text-lg font-semibold text-gray-900 mb-3">Ingredients</Text>
-                <Text className="text-gray-700 leading-6">
-                  {product.ingredients}
-                </Text>
-              </View>
-            )}
-          </Animated.View>
-
-          {/* Allergens */}
-          <Animated.View 
-            style={{
-              transform: [{ translateY: allergensSlideAnim }],
-              opacity: contentAnim,
-            }}
-          >
-            {product.allergens && product.allergens.length > 0 && (
-              <View className="mb-6">
-                <Text className="text-lg font-semibold text-gray-900 mb-3">Allergens</Text>
-                <View className="flex-row flex-wrap">
-                  {product.allergens.map((allergen, index) => (
-                    <View key={index} className="bg-red-100 px-3 py-1 rounded-full mr-2 mb-2">
-                      <Text className="text-sm text-red-700">{allergen}</Text>
-                    </View>
-                  ))}
-                </View>
-              </View>
-            )}
-          </Animated.View>
-
-          {/* Additional Info */}
-          <Animated.View 
-            style={{
-              transform: [{ translateY: additionalSlideAnim }],
-              opacity: contentAnim,
-            }}
-          >
-            <View className="mb-6">
-              <Text className="text-lg font-semibold text-gray-900 mb-3">Additional Information</Text>
-              <View className="space-y-2">
-                {product.novaGroup && (
-                  <View className="flex-row justify-between">
-                    <Text className="text-gray-600">NOVA Group</Text>
-                    <Text className="font-medium">{product.novaGroup}</Text>
-                  </View>
-                )}
-                {product.ecoscore && (
-                  <View className="flex-row justify-between">
-                    <Text className="text-gray-600">Eco Score</Text>
-                    <Text className="font-medium">{product.ecoscore.grade || product.ecoscore.score}</Text>
-                  </View>
-                )}
-                {product.scannedAt && (
-                  <View className="flex-row justify-between">
-                    <Text className="text-gray-600">Scanned</Text>
-                    <Text className="font-medium">
-                      {product.scannedAt.toLocaleDateString()}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            </View>
-          </Animated.View>
-        </ScrollView>
-
-        {/* Close Button */}
-        <Animated.View 
-          style={{
-            transform: [{ scale: buttonScaleAnim }],
-            opacity: contentAnim,
-          }}
-        >
-          <View className="px-6 py-4 border-t border-gray-200">
-            <Pressable 
-              onPress={onClose}
-              className="bg-primary py-3 rounded-2xl items-center"
-            >
+          <View className="px-6 py-4 border-t border-gray-700">
+            <Pressable onPress={onClose} className="bg-blue-600 py-3 rounded-2xl items-center">
               <Text className="text-white font-semibold text-lg">Close</Text>
             </Pressable>
           </View>
         </Animated.View>
+      </>
+    );
+  }
+
+  // Safe product data
+  const productName = product.name || 'Unknown Product';
+  const productBrand = product.brand || 'Unknown Brand';
+  const nutritionGrade = product.nutriscore?.grade || product.nutritionGrade || 'N/A';
+  const novaGroup = product.novaGroup;
+  const ecoScore = product.ecoscore?.grade || 'N/A';
+
+  // Score color functions
+  const getScoreColor = (grade: string) => {
+    const gradeLower = grade.toLowerCase();
+    switch (gradeLower) {
+      case 'a': return '#10B981';
+      case 'b': return '#3B82F6';
+      case 'c': return '#F59E0B';
+      case 'd': return '#F97316';
+      case 'e': return '#EF4444';
+      default: return '#6B7280';
+    }
+  };
+
+  const getScoreBackground = (grade: string) => {
+    const gradeLower = grade.toLowerCase();
+    switch (gradeLower) {
+      case 'a': return '#D1FAE5';
+      case 'b': return '#DBEAFE';
+      case 'c': return '#FEF3C7';
+      case 'd': return '#FED7AA';
+      case 'e': return '#FEE2E2';
+      default: return '#F3F4F6';
+    }
+  };
+
+  // Simple nutrition display
+  const renderNutritionInfo = () => {
+    const nutritionItems = [
+      { label: 'Energy', value: product.nutriments?.energy_kcal_100g, unit: 'kcal' },
+      { label: 'Protein', value: product.nutriments?.proteins_100g, unit: 'g' },
+      { label: 'Carbs', value: product.nutriments?.carbohydrates_100g, unit: 'g' },
+      { label: 'Fat', value: product.nutriments?.fat_100g, unit: 'g' },
+      { label: 'Fiber', value: product.nutriments?.fiber_100g, unit: 'g' },
+      { label: 'Sugars', value: product.nutriments?.sugars_100g, unit: 'g' },
+      { label: 'Salt', value: product.nutriments?.salt_100g, unit: 'g' },
+    ];
+
+    return (
+      <View className="space-y-3">
+        {nutritionItems.map((item, index) => {
+          if (!item.value || isNaN(Number(item.value))) return null;
+          
+          const value = Number(item.value);
+          const displayValue = value.toFixed(1);
+          
+          return (
+            <View key={index} className="space-y-1">
+              <View className="flex-row justify-between items-center">
+                <Text className="text-white text-sm font-medium">{item.label}</Text>
+                <Text className="text-white text-sm">{displayValue}{item.unit}</Text>
+              </View>
+              <View className="h-2 bg-gray-600 rounded-full overflow-hidden">
+                <View 
+                  className="h-full rounded-full bg-blue-500"
+                  style={{ width: '50%' }}
+                />
+              </View>
+            </View>
+          );
+        })}
+      </View>
+    );
+  };
+
+  return (
+    <>
+      <Animated.View 
+        className="absolute inset-0 bg-black/60 z-40"
+        style={{ opacity: backdropAnim }}
+      >
+        <Pressable onPress={onClose} className="w-full h-full" />
+      </Animated.View>
+      
+      <Animated.View 
+        className="absolute bottom-0 left-0 right-0 bg-[#0F172A] rounded-t-3xl z-50"
+        style={{
+          transform: [{ translateY: slideAnim }],
+          maxHeight: screenHeight * 0.85,
+        }}
+      >
+        <View className="w-12 h-1 bg-gray-400 rounded-full mx-auto mt-3 mb-4" />
+        
+        <ScrollView className="flex-1 px-6 py-4" showsVerticalScrollIndicator={false}>
+          
+          {/* Product Overview */}
+          <View className="bg-[#1E293B] rounded-2xl p-4 mb-4">
+            <Text className="text-white text-lg font-bold mb-4">Product Overview</Text>
+            <View className="flex-row items-start space-x-4">
+              <View className="w-24 h-24 rounded-2xl overflow-hidden">
+                {product.imageUrl ? (
+                  <Image
+                    source={{ uri: product.imageUrl, cache: 'force-cache' }}
+                    className="w-full h-full"
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <View className="w-full h-full bg-gradient-to-br from-blue-500 to-purple-600 items-center justify-center">
+                    <Text className="text-white text-xs font-bold text-center">
+                      {productName.substring(0, 4)}
+                    </Text>
+                  </View>
+                )}
+              </View>
+              
+              <View className="flex-1 space-y-2">
+                <View className="flex-row justify-between">
+                  <Text className="text-gray-300 text-sm">Product Name:</Text>
+                  <Text className="text-white text-sm font-medium">{productName}</Text>
+                </View>
+                <View className="flex-row justify-between">
+                  <Text className="text-gray-300 text-sm">Brand:</Text>
+                  <Text className="text-white text-sm font-medium">{productBrand}</Text>
+                </View>
+                <View className="flex-row justify-between">
+                  <Text className="text-gray-300 text-sm">Score Grade:</Text>
+                  <View 
+                    className="px-2 py-1 rounded-full"
+                    style={{ backgroundColor: getScoreBackground(nutritionGrade) }}
+                  >
+                    <Text 
+                      className="text-xs font-bold"
+                      style={{ color: getScoreColor(nutritionGrade) }}
+                    >
+                      {nutritionGrade}
+                    </Text>
+                  </View>
+                </View>
+                <View className="flex-row justify-between">
+                  <Text className="text-gray-300 text-sm">NOVA Group:</Text>
+                  <Text className="text-white text-sm font-medium">
+                    {novaGroup ? 'Group ' + novaGroup : 'N/A'}
+                  </Text>
+                </View>
+                <View className="flex-row justify-between">
+                  <Text className="text-gray-300 text-sm">Eco Score:</Text>
+                  <Text className="text-white text-sm font-medium">{ecoScore}</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Nutrition Chart */}
+          <View className="bg-[#1E293B] rounded-2xl p-4 mb-4">
+            <Text className="text-white text-lg font-bold mb-4">Nutrition Overview</Text>
+            <View className="items-center justify-center">
+              {renderNutritionInfo()}
+            </View>
+          </View>
+
+          {/* Ingredients */}
+          <View className="bg-[#1E293B] rounded-2xl p-4 mb-4">
+            <Text className="text-white text-lg font-bold mb-4">Ingredients</Text>
+            <View className="space-y-3">
+              {product.ingredients ? (
+                <View>
+                  <Text className="text-gray-300 text-sm mb-2">Ingredients:</Text>
+                  <Text className="text-white text-sm leading-5">{product.ingredients}</Text>
+                </View>
+              ) : (
+                <Text className="text-gray-300 text-sm">No ingredient information available.</Text>
+              )}
+              
+              {product.categories && product.categories.length > 0 && (
+                <View>
+                  <Text className="text-gray-300 text-sm mb-2">Categories:</Text>
+                  <View className="flex-row flex-wrap">
+                    {product.categories.map((category, index) => (
+                      <View key={index} className="bg-blue-600/20 px-3 py-1 rounded-full mr-2 mb-2">
+                        <Text className="text-blue-300 text-xs">{category}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+              
+              {product.allergens && product.allergens.length > 0 && (
+                <View>
+                  <Text className="text-gray-300 text-sm mb-2">Allergens:</Text>
+                  <View className="flex-row flex-wrap">
+                    {product.allergens.map((allergen, index) => (
+                      <View key={index} className="bg-red-600/20 px-3 py-1 rounded-full mr-2 mb-2">
+                        <Text className="text-red-300 text-xs">{allergen}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Close Button */}
+        <View className="px-6 py-4 border-t border-gray-700">
+          <Pressable onPress={onClose} className="bg-blue-600 py-3 rounded-2xl items-center">
+            <Text className="text-white font-semibold text-lg">Close</Text>
+          </Pressable>
+        </View>
       </Animated.View>
     </>
   );
 };
+
+
+
+
