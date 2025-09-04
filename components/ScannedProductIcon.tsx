@@ -53,20 +53,20 @@ export const ScannedProductIcon: React.FC<ScannedProductIconProps> = ({
     }
   }, [product.imageUrl]);
 
-  const getScoreColor = (grade?: string) => {
+  const getScoreBorderColor = (grade?: string) => {
     switch (grade?.toLowerCase()) {
       case 'a':
-        return 'text-green-500';
+        return 'border-grade-a';
       case 'b':
-        return 'text-blue-500';
+        return 'border-grade-b';
       case 'c':
-        return 'text-yellow-500';
+        return 'border-grade-c';
       case 'd':
-        return 'text-orange-500';
+        return 'border-grade-d';
       case 'e':
-        return 'text-red-500';
+        return 'border-grade-e';
       default:
-        return 'text-gray-400';
+        return 'border-gray-400';
     }
   };
 
@@ -95,8 +95,8 @@ export const ScannedProductIcon: React.FC<ScannedProductIconProps> = ({
         transform: [{ scale: scaleAnim }, { translateX: slideAnim }],
       }}
     >
-      {/* Product Image Square */}
-      <View className="w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg border-4 border-white">
+      {/* Product Image Square with colored border based on grade */}
+      <View className={`w-20 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg border-4 ${getScoreBorderColor(product.nutriscore?.grade || product.nutritionGrade)}`}>
         {product.imageUrl ? (
           <Image
             source={{ 
@@ -156,10 +156,10 @@ export const ScannedProductIcon: React.FC<ScannedProductIconProps> = ({
         )}
       </View>
       
-      {/* Score Badge - Smaller to match icon size */}
-      <View className="mt-1 px-1 py-0.5 rounded-full bg-black bg-opacity-80 border border-white border-opacity-30">
-        <Text className={`text-xs font-bold text-white`}>
-          {product.nutriscore?.grade || product.nutritionGrade || '⏳'}
+      {/* Score Badge with colored border based on grade - completely redesigned for visibility */}
+      <View className={`absolute bottom-[-12px] w-8 h-8 rounded-full bg-black items-center justify-center border-2 ${getScoreBorderColor(product.nutriscore?.grade || product.nutritionGrade)}`}>
+        <Text className="text-base font-bold text-white" style={{ textAlign: 'center', lineHeight: 22 }}>
+          {(product.nutriscore?.grade || product.nutritionGrade || '⏳').toUpperCase()}
         </Text>
       </View>
     </Animated.View>

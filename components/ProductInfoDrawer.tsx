@@ -24,37 +24,37 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
 }) => {
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
-  const panGestureRef = useRef<PanGestureHandler>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (isVisible) {
-      // Fast timing animation for opening with easing
+      // Optimized animation timing for smoother drawer opening
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: 0,
-          duration: 200, // Reduced from 300ms
+          duration: 220, // Slightly increased for smoother motion
           easing: Easing.out(Easing.cubic), // Smooth deceleration
           useNativeDriver: true,
         }),
         Animated.timing(backdropAnim, {
           toValue: 1,
-          duration: 150, // Reduced from 250ms
+          duration: 170, // Slightly increased for smoother fade
           easing: Easing.out(Easing.quad), // Gentle fade in
           useNativeDriver: true,
         }),
       ]).start();
     } else {
-      // Fast timing animation for closing with easing
+      // Optimized animation timing for smoother drawer closing
       Animated.parallel([
         Animated.timing(slideAnim, {
           toValue: screenHeight,
-          duration: 180, // Reduced from 250ms
-          easing: Easing.in(Easing.cubic), // Smooth acceleration
+          duration: 200, // Increased for smoother motion
+          easing: Easing.inOut(Easing.cubic), // Smoother acceleration and deceleration
           useNativeDriver: true,
         }),
         Animated.timing(backdropAnim, {
           toValue: 0,
-          duration: 120, // Reduced from 200ms
+          duration: 150, // Increased for smoother fade
           easing: Easing.in(Easing.quad), // Quick fade out
           useNativeDriver: true,
         }),
@@ -62,29 +62,43 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
     }
   }, [isVisible]);
 
-  // Handle pan gestures for swipe down to close and swipe left/right to switch products
+  // Enhanced handler for horizontal swipe gestures only
+  const isSwipeInProgress = useRef(false);
+  
   const handlePanGesture = (event: any) => {
-    const { translationY, translationX, velocityY, velocityX, state } = event.nativeEvent;
+    const { translationX, velocityX, state } = event.nativeEvent;
     
+    // Only process gestures in END state to avoid duplicate triggers
     if (state === State.END) {
-      // Swipe down to close (threshold: 100px or velocity > 500)
-      if (translationY > 100 || velocityY > 500) {
-        onClose();
+      // If a swipe is already in progress, don't trigger another
+      if (isSwipeInProgress.current) {
         return;
       }
       
-      // Swipe left to go to next product (threshold: 100px or velocity > 500)
-      if (translationX < -100 || velocityX < -500) {
+      // Swipe left to go to next product (more sensitive)
+      if (translationX < -50 && velocityX < -120) {
+        console.log('Left swipe detected - switching to next product');
         if (hasNextProduct && onSwitchProduct) {
+          isSwipeInProgress.current = true;
           onSwitchProduct('right');
+          // Reset the flag after a short delay
+          setTimeout(() => {
+            isSwipeInProgress.current = false;
+          }, 500);
         }
         return;
       }
       
-      // Swipe right to go to previous product (threshold: 100px or velocity > 500)
-      if (translationX > 100 || velocityX > 500) {
+      // Swipe right to go to previous product (more sensitive)
+      if (translationX > 50 && velocityX > 120) {
+        console.log('Right swipe detected - switching to previous product');
         if (hasPreviousProduct && onSwitchProduct) {
+          isSwipeInProgress.current = true;
           onSwitchProduct('left');
+          // Reset the flag after a short delay
+          setTimeout(() => {
+            isSwipeInProgress.current = false;
+          }, 500);
         }
         return;
       }
@@ -107,22 +121,23 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
           <Pressable onPress={onClose} className="w-full h-full" />
         </Animated.View>
         
-        <PanGestureHandler
-          ref={panGestureRef}
-          onHandlerStateChange={handlePanGesture}
-          onGestureEvent={handlePanGesture}
-          activeOffsetY={[-10, 10]}
-          activeOffsetX={[-10, 10]}
-          failOffsetX={[-50, 50]}
+        <Animated.View 
+          className="absolute bottom-0 left-0 right-0 bg-[#0F172A] rounded-t-3xl z-50"
+          style={{
+            transform: [{ translateY: slideAnim }],
+            height: screenHeight * 0.75, // Further reduced height to show more camera view
+          }}
         >
-          <Animated.View 
-            className="absolute bottom-0 left-0 right-0 bg-[#0F172A] rounded-t-3xl z-50"
-            style={{
-              transform: [{ translateY: slideAnim }],
-              height: screenHeight * 0.85, // Reduced height to leave some camera view
-            }}
+          <PanGestureHandler
+            onHandlerStateChange={handlePanGesture}
+            onGestureEvent={handlePanGesture}
+            activeOffsetX={[-10, 10]}
+            shouldCancelWhenOutside={false}
           >
-            <View className="w-12 h-1 bg-gray-400 rounded-full mx-auto mt-3 mb-4" />
+            <View className="w-12 h-8 bg-transparent rounded-full mx-auto mt-3 mb-4 items-center justify-center">
+              <View className="w-12 h-1 bg-gray-400 rounded-full" />
+            </View>
+          </PanGestureHandler>
             
             <View className="px-6 py-4">
               <Text className="text-white text-lg font-bold mb-4">Content Overview</Text>
@@ -139,10 +154,9 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
               </Pressable>
             </View>
           </Animated.View>
-        </PanGestureHandler>
-      </>
-    );
-  }
+        </>
+      );
+    }
 
   // Safe product data
   const productName = product.name || 'Unknown Product';
@@ -224,24 +238,33 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
         <Pressable onPress={onClose} className="w-full h-full" />
       </Animated.View>
       
-      <PanGestureHandler
-        ref={panGestureRef}
-        onHandlerStateChange={handlePanGesture}
-        onGestureEvent={handlePanGesture}
-        activeOffsetY={[-10, 10]}
-        activeOffsetX={[-10, 10]}
-        failOffsetX={[-50, 50]}
+      <Animated.View 
+        className="absolute bottom-0 left-0 right-0 bg-[#0F172A] rounded-t-3xl z-50"
+        style={{
+          transform: [{ translateY: slideAnim }],
+          height: screenHeight * 0.85, // Reduced height to leave some camera view
+        }}
       >
-        <Animated.View 
-          className="absolute bottom-0 left-0 right-0 bg-[#0F172A] rounded-t-3xl z-50"
-          style={{
-            transform: [{ translateY: slideAnim }],
-            height: screenHeight * 0.85, // Reduced height to leave some camera view
-          }}
+        <PanGestureHandler
+          onHandlerStateChange={handlePanGesture}
+          onGestureEvent={handlePanGesture}
+          activeOffsetX={[-10, 10]}
+          shouldCancelWhenOutside={false}
         >
-        <View className="w-12 h-1 bg-gray-400 rounded-full mx-auto mt-3 mb-4" />
+          <View className="w-12 h-8 bg-transparent rounded-full mx-auto mt-3 mb-4 items-center justify-center">
+            <View className="w-12 h-1 bg-gray-400 rounded-full" />
+          </View>
+        </PanGestureHandler>
         
-        <ScrollView className="flex-1 px-6 py-4" showsVerticalScrollIndicator={false}>
+        {/* Main content with horizontal swipe detection */}
+        <PanGestureHandler
+          onHandlerStateChange={handlePanGesture}
+          onGestureEvent={handlePanGesture}
+          activeOffsetX={[-10, 10]}
+          shouldCancelWhenOutside={false}
+        >
+          <Animated.View style={{flex: 1}}>
+            <ScrollView ref={scrollViewRef} className="flex-1 px-6 py-4" showsVerticalScrollIndicator={false}>
           
           {/* Product Overview */}
           <View className="bg-[#1E293B] rounded-2xl p-4 mb-4">
@@ -349,6 +372,8 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
             </View>
           </View>
         </ScrollView>
+          </Animated.View>
+        </PanGestureHandler>
 
         {/* Close Button */}
         <View className="px-6 py-4 border-t border-gray-700">
@@ -357,7 +382,6 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
           </Pressable>
         </View>
         </Animated.View>
-      </PanGestureHandler>
     </>
   );
 };

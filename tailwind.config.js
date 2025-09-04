@@ -19,6 +19,13 @@ module.exports = {
         },
         accent: "#AB8BFF",
         offwhite:"#f0f4f7",
+        grade: {
+          a: "#00803D",
+          b: "#87BD25",
+          c: "#FFCC00",
+          d: "#EF7D00",
+          e: "#E63312",
+        },
       },
     },
   },

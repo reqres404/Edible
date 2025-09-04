@@ -16,17 +16,17 @@ export const ScannedProductCard: React.FC<ScannedProductCardProps> = ({
   const getScoreColor = (grade?: string) => {
     switch (grade?.toLowerCase()) {
       case 'a':
-        return 'text-green-600 bg-green-100';
+        return 'text-grade-a bg-green-100 border-grade-a';
       case 'b':
-        return 'text-blue-600 bg-blue-100';
+        return 'text-grade-b bg-green-50 border-grade-b';
       case 'c':
-        return 'text-yellow-600 bg-yellow-100';
+        return 'text-grade-c bg-yellow-50 border-grade-c';
       case 'd':
-        return 'text-orange-600 bg-orange-100';
+        return 'text-grade-d bg-orange-50 border-grade-d';
       case 'e':
-        return 'text-red-600 bg-red-100';
+        return 'text-grade-e bg-red-50 border-grade-e';
       default:
-        return 'text-gray-600 bg-gray-100';
+        return 'text-gray-600 bg-gray-100 border-gray-400';
     }
   };
 
@@ -91,9 +91,9 @@ export const ScannedProductCard: React.FC<ScannedProductCardProps> = ({
 
           {/* Score and Categories */}
           <View className="flex-row items-center space-x-2 mb-2">
-            <View className={`px-3 py-1 rounded-full ${getScoreColor(product.nutriscore?.grade || product.nutritionGrade)}`}>
+            <View className={`px-3 py-1 rounded-full border ${getScoreColor(product.nutriscore?.grade || product.nutritionGrade)}`}>
               <Text className={`text-sm font-bold ${getScoreColor(product.nutriscore?.grade || product.nutritionGrade).split(' ')[0]}`}>
-                {product.nutriscore?.grade || product.nutritionGrade || 'N/A'}
+                {(product.nutriscore?.grade || product.nutritionGrade || 'N/A').toUpperCase()}
               </Text>
             </View>
             

@@ -545,11 +545,11 @@ export default function ScanScreen() {
     setSelectedProductIndex(productIndex);
     setIsDrawerVisible(true);
     
-    // Start both animations simultaneously - icons move quickly to clear space
+    // Start animation with improved timing for smoother motion
     Animated.timing(iconsPositionAnim, {
       toValue: 1,
-      duration: 180, // Reduced from 250ms
-      easing: Easing.out(Easing.cubic), // Smooth deceleration
+      duration: 200, // Slightly longer duration for smoother animation
+      easing: Easing.out(Easing.quad), // Quad easing for smoother deceleration
       useNativeDriver: true,
     }).start();
     
@@ -559,22 +559,28 @@ export default function ScanScreen() {
   // Function to close the product info drawer
   const closeDrawer = () => {
     setIsDrawerVisible(false);
-    setSelectedProduct(null);
+    // Don't reset selected product to ensure we remember the position
+    // setSelectedProduct(null);
     
     // Animate icons back to original position after drawer starts closing
     setTimeout(() => {
       Animated.timing(iconsPositionAnim, {
         toValue: 0,
-        duration: 150, // Reduced from 200ms
-        easing: Easing.in(Easing.cubic), // Smooth acceleration
+        duration: 180, // Increased slightly for smoother motion
+        easing: Easing.inOut(Easing.cubic), // Using inOut easing for smoother acceleration/deceleration
         useNativeDriver: true,
       }).start();
-    }, 50); // Reduced delay from 100ms to 50ms
+    }, 20); // Reduced delay for more immediate response
   };
 
   // Function to switch between products
   const handleSwitchProduct = (direction: 'left' | 'right') => {
-    if (currentScannedProducts.length <= 1) return;
+    console.log('handleSwitchProduct called:', { direction, currentScannedProducts: currentScannedProducts.length, selectedProductIndex });
+    
+    if (currentScannedProducts.length <= 1) {
+      console.log('Not enough products to switch');
+      return;
+    }
     
     let newIndex = selectedProductIndex;
     if (direction === 'right') {
@@ -583,6 +589,7 @@ export default function ScanScreen() {
       newIndex = selectedProductIndex === 0 ? currentScannedProducts.length - 1 : selectedProductIndex - 1;
     }
     
+    console.log('Switching from index', selectedProductIndex, 'to', newIndex);
     setSelectedProductIndex(newIndex);
     setSelectedProduct(currentScannedProducts[newIndex]);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -713,15 +720,15 @@ export default function ScanScreen() {
       
       {/* Product Icons Display - Horizontal Scrollable Carousel - Always visible with consistent height */}
       <Animated.View 
-        className="absolute left-0 right-0 h-52 z-40 bg-black bg-opacity-80 items-center justify-center"
+        className="absolute left-0 right-0 h-36 z-40 bg-black bg-opacity-80 flex items-center justify-center"
         style={{
           transform: [{
             translateY: iconsPositionAnim.interpolate({
               inputRange: [0, 1],
-              outputRange: [0, -120], // Move up enough to clear the drawer (85% of screen height)
+              outputRange: [0, -40], // Reduced movement to keep icons more visible
             })
           }],
-          top: Math.max(100, insets.top + 60), // Stay in safe area with minimum spacing
+          top: Math.max(90, insets.top + 50), // Adjusted positioning for better visual balance
         }}
       >
         {currentScannedProducts.length > 0 ? (
@@ -732,7 +739,7 @@ export default function ScanScreen() {
             keyExtractor={(item) => item.barcode}
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ paddingHorizontal: 16, alignItems: 'center', marginTop: 55 }}
+            contentContainerStyle={{ paddingHorizontal: 16, alignItems: 'center', paddingVertical: 10 }}
             snapToInterval={104} // 80px icon + 24px spacing
             decelerationRate="fast"
             bounces={false}
@@ -749,8 +756,8 @@ export default function ScanScreen() {
         ) : (
           <View className="flex-1 items-center justify-center">
             <Text className="text-gray-400 text-sm">Scan products to see them here</Text>
-          </View>
-        )}
+        </View>
+      )}
       </Animated.View>
       
       <View className="absolute inset-0 pointer-events-none">
