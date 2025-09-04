@@ -10,7 +10,7 @@ export default function TopBar() {
 
   return (
     <SafeAreaView edges={["top"]} className="bg-primary">
-      <StatusBar style="light" backgroundColor="#8C52FF" />
+      <StatusBar style="light" />
       <View className="w-full px-5 py-3 flex-row items-center justify-between">
         <View className="flex-row items-end">
           <Text

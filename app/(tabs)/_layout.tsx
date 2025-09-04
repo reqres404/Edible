@@ -1,4 +1,5 @@
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import * as Haptics from 'expo-haptics';
 import { Tabs, useRouter } from "expo-router";
 import { Image, Pressable, View } from "react-native";
 
@@ -29,6 +30,8 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   };
 
   const onPressRoute = (index: number) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    
     const event = navigation.emit({
       type: "tabPress",
       target: state.routes[index].key,
@@ -43,13 +46,14 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const visibleRoutes = state.routes.filter((r) => r.name !== "scan");
 
   return (
-    <View className="absolute left-0 right-0 bottom-6 mx-5">
+    <View className="absolute left-0 right-0 bottom-2 mx-5">
       <View className="flex-row items-center justify-between bg-primary rounded-full h-16 px-8 mb-4 overflow-hidden">
         {/* Distribute icons with an invisible spacer to reserve the center area */}
         {(() => {
           const routesForBar = visibleRoutes;
           const renderIcon = (route: typeof visibleRoutes[number], index: number) => {
             const isFocused = state.index === index;
+            const routeName = route?.name || 'index';
             return (
               <Pressable
                 key={route.key}
@@ -58,7 +62,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
                 onPress={() => onPressRoute(index)}
                 className="items-center justify-center"
               >
-                <Image source={getIconForRoute(route.name)} style={{ width: 28, height: 28, tintColor: isFocused ? activeTintColor : inactiveTintColor }} />
+                <Image source={getIconForRoute(routeName)} style={{ width: 28, height: 28, tintColor: isFocused ? activeTintColor : inactiveTintColor }} />
               </Pressable>
             );
           };
@@ -76,7 +80,10 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
       </View>
 
       <Pressable
-        onPress={() => router.push("/scan")}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          router.push("/scan");
+        }}
         className="absolute self-center -top-6 w-20 h-20 rounded-full items-center justify-center bg-deep shadow-2xl"
       >
         <View className="w-20 h-20 rounded-full border-4 border-white items-center justify-center">

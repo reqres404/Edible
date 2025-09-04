@@ -1,18 +1,67 @@
-import React from 'react'
-import { Text, View } from 'react-native'
+import React from 'react';
+import { Text, View, ScrollView, Pressable } from 'react-native';
+import { useScannedProducts } from '@/contexts/ScannedProductsContext';
+import { ScannedProductCard } from '@/components/ScannedProductCard';
 
-const saved = () => {
+const Saved = () => {
+  const { scannedProducts, clearScannedProducts, removeScannedProduct } = useScannedProducts();
+
+  const handleProductPress = (product: any) => {
+    // You can add navigation to product details here
+    console.log('Product pressed:', product.name);
+  };
+
+  const handleClearAll = () => {
+    clearScannedProducts();
+  };
+
   return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
-    >
-      <Text className="text-5xl text-dark-500 font-bold">Saved</Text>
-    </View>
-  )
-}
+    <View className="flex-1 bg-offwhite">
+      {/* Header */}
+      <View className="bg-white px-6 py-4 border-b border-gray-200">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-3xl text-dark-500 font-bold">History</Text>
+          {scannedProducts.length > 0 && (
+            <Pressable 
+              onPress={handleClearAll}
+              className="px-4 py-2 bg-red-500 rounded-lg"
+            >
+              <Text className="text-white text-sm font-semibold">Clear All</Text>
+            </Pressable>
+          )}
+        </View>
+        <Text className="text-gray-600 text-sm mt-1">
+          {scannedProducts.length} product{scannedProducts.length !== 1 ? 's' : ''} scanned
+        </Text>
+      </View>
 
-export default saved
+      {/* Content */}
+      <ScrollView className="flex-1 px-6 py-4">
+        {scannedProducts.length === 0 ? (
+          <View className="flex-1 items-center justify-center py-20">
+            <View className="w-24 h-24 bg-gray-200 rounded-full items-center justify-center mb-4">
+              <Text className="text-gray-400 text-4xl">📱</Text>
+            </View>
+            <Text className="text-gray-500 text-lg font-medium text-center mb-2">
+              No products scanned yet
+            </Text>
+            <Text className="text-gray-400 text-sm text-center px-8">
+              Scan a product barcode to see it appear here
+            </Text>
+          </View>
+        ) : (
+          scannedProducts.map((product) => (
+            <ScannedProductCard
+              key={product.barcode}
+              product={product}
+              onPress={() => handleProductPress(product)}
+              onRemove={() => removeScannedProduct(product.barcode)}
+            />
+          ))
+        )}
+      </ScrollView>
+    </View>
+  );
+};
+
+export default Saved;

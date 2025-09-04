@@ -87,4 +87,7 @@ tmp/
 *.swp
 *.swo
 
+# cursor rule
+.cursorrules
+
 app-example
