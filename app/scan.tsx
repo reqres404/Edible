@@ -299,7 +299,22 @@ export default function ScanScreen() {
       console.log('🔑 Authentication token obtained, calling API...');
       
       // Call the backend API
-      const result = await apiService.getProductByBarcode(barcode, token);
+      let result = await apiService.getProductByBarcode(barcode, token);
+      
+      // If unauthorized, try one refresh-and-retry
+      if ((result as any)?.status === 'error' && (result as any)?.statusCode === 401) {
+        console.log('🔄 Token may be expired. Refreshing token and retrying...');
+        // Force refresh by clearing stored token and fetching a new one
+        try {
+          // getCurrentToken already refreshes proactively, so call it again
+          const refreshedToken = await getCurrentToken();
+          if (refreshedToken) {
+            result = await apiService.getProductByBarcode(barcode, refreshedToken);
+          }
+        } catch (retryError) {
+          console.log('Retry after token refresh failed:', retryError);
+        }
+      }
       
       console.log('🎉 Backend API call successful!');
       console.log('📦 Product data:', result.data);
