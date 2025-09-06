@@ -162,9 +162,9 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
   const productName = product.name || 'Unknown Product';
   const productBrand = product.brand || 'Unknown Brand';
   const nutritionGrade = product.nutriscore?.grade || product.nutritionGrade || 'N/A';
-  const novaGroup = product.novaGroup;
-  const ecoScore = product.ecoscore?.grade || 'N/A';
-
+  const nutriScore = product.nutriscore?.score || 'N/A'
+  const category = product.categories?.[0] || 'N/A'
+  const allergens = product.allergens || [];
   // Score color functions
   const getScoreColor = (grade: string) => {
     const gradeLower = grade.toLowerCase();
@@ -268,8 +268,8 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
           
           {/* Product Overview */}
           <View className="bg-[#1E293B] rounded-2xl p-4 mb-4">
-            <Text className="text-white text-lg font-bold mb-4">Product Overview</Text>
-            <View className="flex-row items-start space-x-4">
+            <Text className="text-white  text-lg font-bold mb-4">Product Overview</Text>
+            <View className="flex-row items-center justify-center space-x-6">
               <View className="w-24 h-24 rounded-2xl overflow-hidden">
                 {product.imageUrl ? (
                   <Image
@@ -286,38 +286,34 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
                 )}
               </View>
               
-              <View className="flex-1 space-y-2">
-                <View className="flex-row justify-between">
-                  <Text className="text-gray-300 text-sm">Product Name:</Text>
-                  <Text className="text-white text-sm font-medium">{productName}</Text>
-                </View>
-                <View className="flex-row justify-between">
-                  <Text className="text-gray-300 text-sm">Brand:</Text>
-                  <Text className="text-white text-sm font-medium">{productBrand}</Text>
-                </View>
-                <View className="flex-row justify-between">
-                  <Text className="text-gray-300 text-sm">Score Grade:</Text>
+              <View className="flex-1 items-center">
+                <Text className="text-white text-2xl font-semibold text-center" numberOfLines={2}>
+                  {productName}
+                </Text>
+                <Text className="text-gray-300 text-base font-medium text-center mb-2" numberOfLines={2}>
+                  {productBrand}
+                </Text>
+                <View className="flex-row items-center justify-center mb-2">
                   <View 
-                    className="px-2 py-1 rounded-full"
+                    className="px-4 py-2 rounded-full"
                     style={{ backgroundColor: getScoreBackground(nutritionGrade) }}
                   >
                     <Text 
-                      className="text-xs font-bold"
+                      className="text-sm font-bold"
                       style={{ color: getScoreColor(nutritionGrade) }}
                     >
-                      {nutritionGrade}
+                      {nutritionGrade?.toUpperCase() || 'N/A'}
                     </Text>
                   </View>
-                </View>
-                <View className="flex-row justify-between">
-                  <Text className="text-gray-300 text-sm">NOVA Group:</Text>
-                  <Text className="text-white text-sm font-medium">
-                    {novaGroup ? 'Group ' + novaGroup : 'N/A'}
+                  <View style={{ width: 24 }} />
+                  <Text className="text-gray-300 text-lg text-base font-medium text-center">
+                    {nutriScore}/100
                   </Text>
                 </View>
-                <View className="flex-row justify-between">
-                  <Text className="text-gray-300 text-sm">Eco Score:</Text>
-                  <Text className="text-white text-sm font-medium">{ecoScore}</Text>
+                <View className="bg-gray-600/20 px-4 py-2 rounded-full">
+                  <Text className="text-gray-100 text-sm font-semibold text-center">
+                    {category}
+                  </Text>
                 </View>
               </View>
             </View>
