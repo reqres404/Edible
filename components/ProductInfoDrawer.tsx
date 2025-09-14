@@ -229,39 +229,107 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
     </View>
   );
 
-  // Pie chart component based on Daily Values
+  // Enhanced pie chart component with detailed breakdown
   const renderPieChart = () => {
-    const nutritionItems = [
+    const nutriments = product.nutriments || {};
+    
+    // Define pie chart item type
+    type PieChartItem = {
+      label: string;
+      key: string;
+      value?: number;
+      color: string;
+      category: string;
+      subItem?: boolean;
+      isSalt?: boolean;
+    };
+    
+    // Enhanced nutrition items with detailed breakdown
+    const nutritionItems: PieChartItem[] = [
       { 
         label: 'Protein', 
         key: 'proteins_100g', 
-        value: product.nutriments?.proteins_100g, 
-        color: '#FF6B6B'
+        value: nutriments.proteins_100g, 
+        color: '#FF6B6B',
+        category: 'macros'
       },
       { 
-        label: 'Carbs', 
+        label: 'Total Carbs', 
         key: 'carbohydrates_100g', 
-        value: product.nutriments?.carbohydrates_100g, 
-        color: '#4ECDC4'
+        value: nutriments.carbohydrates_100g, 
+        color: '#4ECDC4',
+        category: 'carbs'
       },
       { 
-        label: 'Fat', 
-        key: 'fat_100g', 
-        value: product.nutriments?.fat_100g, 
-        color: '#45B7D1'
+        label: 'Dietary Fiber', 
+        key: 'dietary_fiber_100g', 
+        value: nutriments.dietary_fiber_100g, 
+        color: '#96CEB4',
+        category: 'carbs',
+        subItem: true
       },
       { 
         label: 'Fiber', 
         key: 'fiber_100g', 
-        value: product.nutriments?.fiber_100g, 
-        color: '#96CEB4'
+        value: nutriments.fiber_100g, 
+        color: '#96CEB4',
+        category: 'carbs',
+        subItem: true
+      },
+      { 
+        label: 'Sugars', 
+        key: 'sugars_100g', 
+        value: nutriments.sugars_100g, 
+        color: '#F39C12',
+        category: 'carbs',
+        subItem: true
+      },
+      { 
+        label: 'Added Sugars', 
+        key: 'added_sugars_100g', 
+        value: nutriments.added_sugars_100g, 
+        color: '#E74C3C',
+        category: 'carbs',
+        subItem: true
+      },
+      { 
+        label: 'Starch', 
+        key: 'starch_100g', 
+        value: nutriments.starch_100g, 
+        color: '#9B59B6',
+        category: 'carbs',
+        subItem: true
+      },
+      { 
+        label: 'Total Fat', 
+        key: 'fat_100g', 
+        value: nutriments.fat_100g, 
+        color: '#45B7D1',
+        category: 'fats'
+      },
+      { 
+        label: 'Saturated Fat', 
+        key: 'saturated_fat_100g', 
+        value: nutriments.saturated_fat_100g, 
+        color: '#E67E22',
+        category: 'fats',
+        subItem: true
+      },
+      { 
+        label: 'Trans Fat', 
+        key: 'trans_fat_100g', 
+        value: nutriments.trans_fat_100g, 
+        color: '#C0392B',
+        category: 'fats',
+        subItem: true
       },
       { 
         label: 'Salt', 
         key: 'salt_100g', 
-        value: product.nutriments?.salt_100g, 
+        value: nutriments.salt_100g, 
         color: '#FFEAA7',
-        isSalt: true
+        isSalt: true,
+        category: 'minerals'
       },
     ];
 
@@ -386,150 +454,493 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
     );
   };
 
-  // Enhanced nutrition display with Daily Value calculations
+  // Enhanced nutrition display with composite bars for carbs and fats
   const renderNutritionInfo = () => {
-    const nutritionItems = [
-      { 
-        label: 'Energy', 
-        key: 'energy_kcal_100g', 
-        value: product.nutriments?.energy_kcal_100g, 
-        unit: 'kcal',
-        showDV: false, // Energy doesn't have a DV
-        color: '#6B7280' // Gray for no DV
+    // Get all available nutrition data
+    const nutriments = product.nutriments || {};
+    
+    // Define nutrition item type
+    type NutritionItem = {
+      label: string;
+      key: string;
+      value?: number;
+      unit: string;
+      showDV: boolean;
+      color: string;
+      isMain?: boolean;
+      subItem?: boolean;
+      isSalt?: boolean;
+    };
+
+    // Helper function to create composite bar for carbs
+    const renderCompositeCarbBar = () => {
+      const totalCarbs = Number(nutriments.carbohydrates_100g) || 0;
+      const fiber = Number(nutriments.fiber_100g) || Number(nutriments.dietary_fiber_100g) || 0;
+      const sugars = Number(nutriments.sugars_100g) || 0;
+      const addedSugars = Number(nutriments.added_sugars_100g) || 0;
+      const starch = Number(nutriments.starch_100g) || 0;
+      const polyols = Number(nutriments.polyols_100g) || 0;
+      
+      // Calculate DV for total carbs
+      const dvInfo = calculateDailyValue('carbohydrates_100g', totalCarbs);
+      const barWidth = dvInfo?.hasDV ? Math.min(dvInfo.percentage || 0, 100) : 30;
+      
+      // Calculate percentages for each component
+      const components = [
+        { label: 'Fiber', value: fiber, color: '#10B981', bgColor: 'rgba(16, 185, 129, 0.15)' },
+        { label: 'Sugars', value: sugars, color: '#F59E0B', bgColor: 'rgba(245, 158, 11, 0.15)' },
+        { label: 'Added Sugars', value: addedSugars, color: '#EF4444', bgColor: 'rgba(239, 68, 68, 0.15)' },
+        { label: 'Starch', value: starch, color: '#8B5CF6', bgColor: 'rgba(139, 92, 246, 0.15)' },
+        { label: 'Polyols', value: polyols, color: '#06B6D4', bgColor: 'rgba(6, 182, 212, 0.15)' }
+      ].filter(comp => comp.value > 0);
+      
+      const totalComponents = components.reduce((sum, comp) => sum + comp.value, 0);
+      
+      return (
+        <View className="space-y-4">
+          {/* Header with improved styling and bullet point */}
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center flex-1">
+              <View 
+                className="w-2 h-2 rounded-full mr-3"
+                style={{ backgroundColor: '#10B981' }}
+              />
+              <Text className="text-white text-xl font-bold">Carbohydrates</Text>
+            </View>
+            <View className="flex-row items-center space-x-4">
+              {dvInfo?.hasDV && (
+                <View 
+                  className="px-3 py-1.5 rounded-full"
+                  style={{ backgroundColor: 'rgba(16, 185, 129, 0.2)' }}
+                >
+                  <Text 
+                    className="text-sm font-bold"
+                    style={{ color: '#10B981' }}
+                  >
+                    {dvInfo.percentage}% DV
+                  </Text>
+                </View>
+              )}
+              <Text className="text-white text-xl font-bold min-w-[60px] text-right">{totalCarbs.toFixed(1)}g</Text>
+            </View>
+          </View>
+          
+          {/* Segmented Progress Bar showing component breakdown */}
+          <View className="relative">
+            <View className="h-5 bg-gray-800 rounded-full overflow-hidden shadow-inner">
+              {totalComponents > 0 ? (
+                <View className="h-full flex-row">
+                  {components.map((comp, index) => {
+                    const componentWidth = (comp.value / totalComponents) * barWidth;
+                    const isLast = index === components.length - 1;
+                    return (
+                      <View
+                        key={index}
+                        className="h-full"
+                        style={{
+                          width: `${componentWidth}%`,
+                          backgroundColor: comp.color,
+                          borderTopRightRadius: isLast ? 12 : 0,
+                          borderBottomRightRadius: isLast ? 12 : 0,
+                          borderTopLeftRadius: index === 0 ? 12 : 0,
+                          borderBottomLeftRadius: index === 0 ? 12 : 0,
+                          marginRight: isLast ? 0 : 1,
+                        }}
+                      />
+                    );
+                  })}
+                </View>
+              ) : (
+                <View 
+                  className="h-full rounded-full"
+                  style={{ 
+                    width: `${barWidth}%`,
+                    backgroundColor: '#10B981',
+                  }}
+                />
+              )}
+            </View>
+            {/* Progress bar glow effect */}
+            <View 
+              className="absolute top-0 h-5 rounded-full opacity-20"
+              style={{ 
+                width: `${barWidth}%`,
+                backgroundColor: '#10B981',
+                shadowColor: '#10B981',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.8,
+                shadowRadius: 8,
+              }}
+            />
+          </View>
+          
+          {/* Enhanced Component Breakdown */}
+          {components.length > 0 && (
+            <View className="bg-gray-800/50 rounded-xl p-4 space-y-3">
+              <Text className="text-gray-300 text-sm font-semibold uppercase tracking-wide">Breakdown</Text>
+              <View className="space-y-2">
+                {components.map((comp, index) => {
+                  const percentage = totalComponents > 0 ? (comp.value / totalComponents) * 100 : 0;
+                  return (
+                    <View key={index} className="flex-row items-center justify-between p-2 rounded-lg" style={{ backgroundColor: comp.bgColor }}>
+                      <View className="flex-row items-center flex-1">
+                        <View 
+                          className="w-4 h-4 rounded-full mr-3 shadow-sm"
+                          style={{ 
+                            backgroundColor: comp.color,
+                            shadowColor: comp.color,
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 2,
+                          }}
+                        />
+                        <Text className="text-white text-sm font-medium">{comp.label}</Text>
+                      </View>
+                      <View className="flex-row items-center space-x-2">
+                        <Text className="text-white text-sm font-bold">{comp.value.toFixed(1)}g</Text>
+                        <View 
+                          className="px-2 py-1 rounded-full"
+                          style={{ backgroundColor: comp.color + '20' }}
+                        >
+                          <Text 
+                            className="text-xs font-bold"
+                            style={{ color: comp.color }}
+                          >
+                            {percentage.toFixed(0)}%
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+        </View>
+      );
+    };
+
+    // Helper function to create composite bar for fats
+    const renderCompositeFatBar = () => {
+      const totalFat = Number(nutriments.fat_100g) || 0;
+      const saturatedFat = Number(nutriments.saturated_fat_100g) || 0;
+      const transFat = Number(nutriments.trans_fat_100g) || 0;
+      const unsaturatedFat = totalFat - saturatedFat - transFat; // Calculate unsaturated fat
+      
+      // Calculate DV for total fat
+      const dvInfo = calculateDailyValue('fat_100g', totalFat);
+      const barWidth = dvInfo?.hasDV ? Math.min(dvInfo.percentage || 0, 100) : 30;
+      
+      // Calculate percentages for each component
+      const components = [
+        { label: 'Saturated', value: saturatedFat, color: '#F97316', bgColor: 'rgba(249, 115, 22, 0.15)' },
+        { label: 'Unsaturated', value: Math.max(0, unsaturatedFat), color: '#3B82F6', bgColor: 'rgba(59, 130, 246, 0.15)' },
+        { label: 'Trans', value: transFat, color: '#EF4444', bgColor: 'rgba(239, 68, 68, 0.15)' }
+      ].filter(comp => comp.value > 0);
+      
+      const totalComponents = components.reduce((sum, comp) => sum + comp.value, 0);
+      
+      return (
+        <View className="space-y-4">
+          {/* Header with improved styling and bullet point */}
+          <View className="flex-row items-center justify-between">
+            <View className="flex-row items-center flex-1">
+              <View 
+                className="w-2 h-2 rounded-full mr-3"
+                style={{ backgroundColor: '#3B82F6' }}
+              />
+              <Text className="text-white text-xl font-bold">Fats</Text>
+            </View>
+            <View className="flex-row items-center space-x-4">
+              {dvInfo?.hasDV && (
+                <View 
+                  className="px-3 py-1.5 rounded-full"
+                  style={{ backgroundColor: 'rgba(59, 130, 246, 0.2)' }}
+                >
+                  <Text 
+                    className="text-sm font-bold"
+                    style={{ color: '#3B82F6' }}
+                  >
+                    {dvInfo.percentage}% DV
+                  </Text>
+                </View>
+              )}
+              <Text className="text-white text-xl font-bold min-w-[60px] text-right">{totalFat.toFixed(1)}g</Text>
+            </View>
+          </View>
+          
+          {/* Segmented Progress Bar showing component breakdown */}
+          <View className="relative">
+            <View className="h-5 bg-gray-800 rounded-full overflow-hidden shadow-inner">
+              {totalComponents > 0 ? (
+                <View className="h-full flex-row">
+                  {components.map((comp, index) => {
+                    const componentWidth = (comp.value / totalComponents) * barWidth;
+                    const isLast = index === components.length - 1;
+                    return (
+                      <View
+                        key={index}
+                        className="h-full"
+                        style={{
+                          width: `${componentWidth}%`,
+                          backgroundColor: comp.color,
+                          borderTopRightRadius: isLast ? 12 : 0,
+                          borderBottomRightRadius: isLast ? 12 : 0,
+                          borderTopLeftRadius: index === 0 ? 12 : 0,
+                          borderBottomLeftRadius: index === 0 ? 12 : 0,
+                          marginRight: isLast ? 0 : 1,
+                        }}
+                      />
+                    );
+                  })}
+                </View>
+              ) : (
+                <View 
+                  className="h-full rounded-full"
+                  style={{ 
+                    width: `${barWidth}%`,
+                    backgroundColor: '#3B82F6',
+                  }}
+                />
+              )}
+            </View>
+            {/* Progress bar glow effect */}
+            <View 
+              className="absolute top-0 h-5 rounded-full opacity-20"
+              style={{ 
+                width: `${barWidth}%`,
+                backgroundColor: '#3B82F6',
+                shadowColor: '#3B82F6',
+                shadowOffset: { width: 0, height: 0 },
+                shadowOpacity: 0.8,
+                shadowRadius: 8,
+              }}
+            />
+          </View>
+          
+          {/* Enhanced Component Breakdown */}
+          {components.length > 0 && (
+            <View className="bg-gray-800/50 rounded-xl p-4 space-y-3">
+              <Text className="text-gray-300 text-sm font-semibold uppercase tracking-wide">Breakdown</Text>
+              <View className="space-y-2">
+                {components.map((comp, index) => {
+                  const percentage = totalComponents > 0 ? (comp.value / totalComponents) * 100 : 0;
+                  return (
+                    <View key={index} className="flex-row items-center justify-between p-2 rounded-lg" style={{ backgroundColor: comp.bgColor }}>
+                      <View className="flex-row items-center flex-1">
+                        <View 
+                          className="w-4 h-4 rounded-full mr-3 shadow-sm"
+                          style={{ 
+                            backgroundColor: comp.color,
+                            shadowColor: comp.color,
+                            shadowOffset: { width: 0, height: 1 },
+                            shadowOpacity: 0.3,
+                            shadowRadius: 2,
+                          }}
+                        />
+                        <Text className="text-white text-sm font-medium">{comp.label}</Text>
+                      </View>
+                      <View className="flex-row items-center space-x-2">
+                        <Text className="text-white text-sm font-bold">{comp.value.toFixed(1)}g</Text>
+                        <View 
+                          className="px-2 py-1 rounded-full"
+                          style={{ backgroundColor: comp.color + '20' }}
+                        >
+                          <Text 
+                            className="text-xs font-bold"
+                            style={{ color: comp.color }}
+                          >
+                            {percentage.toFixed(0)}%
+                          </Text>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+        </View>
+      );
+    };
+
+    // Main nutrition categories with simplified structure
+    const nutritionCategories: Array<{
+      title: string;
+      items: NutritionItem[];
+    }> = [
+      {
+        title: 'Energy',
+        items: [
+          { 
+            label: 'Calories', 
+            key: 'energy_kcal_100g', 
+            value: nutriments.energy_kcal_100g, 
+            unit: 'kcal',
+            showDV: false,
+            color: '#6B7280'
+          }
+        ]
       },
-      { 
-        label: 'Protein', 
-        key: 'proteins_100g', 
-        value: product.nutriments?.proteins_100g, 
-        unit: 'g',
-        showDV: true,
-        color: '#FF6B6B' // Red - same as pie chart
-      },
-      { 
-        label: 'Total Carbs', 
-        key: 'carbohydrates_100g', 
-        value: product.nutriments?.carbohydrates_100g, 
-        unit: 'g',
-        showDV: true,
-        color: '#4ECDC4' // Teal - same as pie chart
-      },
-      { 
-        label: 'Total Fat', 
-        key: 'fat_100g', 
-        value: product.nutriments?.fat_100g, 
-        unit: 'g',
-        showDV: true,
-        color: '#45B7D1' // Blue - same as pie chart
-      },
-      { 
-        label: 'Saturated Fat', 
-        key: 'saturated-fat_100g', 
-        value: product.nutriments ? (product.nutriments as any)['saturated-fat_100g'] : undefined, 
-        unit: 'g',
-        showDV: true,
-        color: '#96CEB4' // Green - same as pie chart
-      },
-      { 
-        label: 'Fiber', 
-        key: 'fiber_100g', 
-        value: product.nutriments?.fiber_100g, 
-        unit: 'g',
-        showDV: true,
-        color: '#96CEB4' // Green - same as pie chart
-      },
-      { 
-        label: 'Sugars', 
-        key: 'sugars_100g', 
-        value: product.nutriments?.sugars_100g, 
-        unit: 'g',
-        showDV: false, // Sugars don't have a DV
-        color: '#6B7280' // Gray for no DV
-      },
-      { 
-        label: 'Salt', 
-        key: 'salt_100g', 
-        value: product.nutriments?.salt_100g, 
-        unit: 'g',
-        showDV: true,
-        isSalt: true, // Special handling for salt to sodium conversion
-        color: '#FFEAA7' // Yellow - same as pie chart
-      },
+      {
+        title: 'Protein & Minerals',
+        items: [
+          { 
+            label: 'Protein', 
+            key: 'proteins_100g', 
+            value: nutriments.proteins_100g, 
+            unit: 'g',
+            showDV: true,
+            color: '#FF6B6B'
+          },
+          { 
+            label: 'Salt', 
+            key: 'salt_100g', 
+            value: nutriments.salt_100g, 
+            unit: 'g',
+            showDV: true,
+            isSalt: true,
+            color: '#FFEAA7'
+          },
+          { 
+            label: 'Sodium', 
+            key: 'sodium_100g', 
+            value: nutriments.sodium_100g, 
+            unit: 'mg',
+            showDV: true,
+            color: '#F39C12'
+          }
+        ]
+      }
     ];
 
     return (
-      <View className="space-y-20">
-        {nutritionItems.map((item, index) => {
-          if (!item.value || isNaN(Number(item.value))) return null;
+      <View className="space-y-6">
+        {/* Individual Nutrition Items */}
+        {nutritionCategories.map((category, categoryIndex) => {
+          // Filter out categories with no available data
+          const availableItems = category.items.filter(item => 
+            item.value !== undefined && !isNaN(Number(item.value))
+          );
           
-          const value = Number(item.value);
-          const displayValue = value.toFixed(1);
-          
-          // Calculate Daily Value if applicable
-          let dvInfo = null;
-          if (item.showDV) {
-            if (item.isSalt) {
-              // Convert salt to sodium for DV calculation
-              const sodiumValue = convertSaltToSodium(value);
-              dvInfo = calculateDailyValue('sodium_100g', sodiumValue);
-            } else {
-              dvInfo = calculateDailyValue(item.key, value);
-            }
-          }
+          if (availableItems.length === 0) return null;
           
           return (
-            <View key={index} className="space-y-6">
-              {/* Header with label, DV, and values */}
-              <View className="flex-row items-center">
-                <View className="flex-1">
-                  <Text className="text-white text-lg font-semibold">{item.label}</Text>
-                </View>
-                <View className="flex-1 items-center">
-                  {dvInfo?.hasDV && (
-                    <View 
-                      className="px-3 py-1 rounded-full"
-                      style={{ backgroundColor: 'rgba(152, 185, 242, 0.2)' }}
-                    >
-                      <Text 
-                        className="text-sm font-bold"
-                        style={{ color: '#98B9F2' }}
-                      >
-                        {dvInfo.percentage}% DV
-                      </Text>
+            <View key={categoryIndex} className="space-y-4">
+              {/* Category Items */}
+              <View className="space-y-4">
+                {availableItems.map((item, itemIndex) => {
+                  const value = Number(item.value);
+                  const displayValue = value.toFixed(1);
+                  
+                  // Calculate Daily Value if applicable
+                  let dvInfo = null;
+                  if (item.showDV) {
+                    if (item.isSalt) {
+                      const sodiumValue = convertSaltToSodium(value);
+                      dvInfo = calculateDailyValue('sodium_100g', sodiumValue);
+                    } else {
+                      dvInfo = calculateDailyValue(item.key, value);
+                    }
+                  }
+                  
+                  return (
+                    <View key={itemIndex} className="space-y-3">
+                      {/* Enhanced Item Header with consistent alignment */}
+                      <View className="flex-row items-center justify-between">
+                        <View className="flex-row items-center flex-1">
+                          <View 
+                            className="w-2 h-2 rounded-full mr-3"
+                            style={{ backgroundColor: item.color }}
+                          />
+                          <Text className="text-white text-xl font-bold">
+                              {item.label}
+                            </Text>
+                        </View>
+                        
+                        <View className="flex-row items-center space-x-4">
+                          {dvInfo?.hasDV && (
+                            <View 
+                              className="px-3 py-1.5 rounded-full"
+                              style={{ backgroundColor: item.color + '20' }}
+                            >
+                              <Text 
+                                className="text-sm font-bold"
+                                style={{ color: item.color }}
+                              >
+                                {dvInfo.percentage}% DV
+                              </Text>
+                            </View>
+                          )}
+                          <Text className="text-white text-xl font-bold min-w-[60px] text-right">
+                            {displayValue}{item.unit}
+                          </Text>
+                        </View>
+                      </View>
+                      
+                      {/* Enhanced Progress Bar */}
+                      <View className="relative">
+                        <View className="h-5 bg-gray-800 rounded-full overflow-hidden shadow-inner">
+                        {dvInfo?.hasDV ? (
+                          <View 
+                              className="h-full rounded-full shadow-lg"
+                            style={{ 
+                              width: `${Math.min(dvInfo.percentage || 0, 100)}%`,
+                                backgroundColor: item.color,
+                                shadowColor: item.color,
+                                shadowOffset: { width: 0, height: 2 },
+                                shadowOpacity: 0.3,
+                                shadowRadius: 4,
+                                elevation: 4,
+                            }}
+                          />
+                        ) : (
+                          <View 
+                            className="h-full rounded-full"
+                            style={{ 
+                              width: '30%',
+                              backgroundColor: item.color,
+                              opacity: 0.6
+                              }}
+                            />
+                          )}
+                        </View>
+                        {/* Progress bar glow effect for DV items */}
+                        {dvInfo?.hasDV && (
+                          <View 
+                            className="absolute top-0 h-5 rounded-full opacity-30"
+                            style={{ 
+                              width: `${Math.min(dvInfo.percentage || 0, 100)}%`,
+                              backgroundColor: item.color,
+                              shadowColor: item.color,
+                              shadowOffset: { width: 0, height: 0 },
+                              shadowOpacity: 0.8,
+                              shadowRadius: 8,
+                            }}
+                          />
+                        )}
+                      </View>
                     </View>
-                  )}
-                </View>
-                <View className="flex-1 items-end">
-                  <Text className="text-white text-xl font-bold">
-                    {displayValue}{item.unit}
-                  </Text>
-                </View>
+                  );
+                })}
               </View>
-              
-              {/* Progress bar with extra bottom margin */}
-              {dvInfo?.hasDV ? (
-                <View className="h-4 bg-gray-700 rounded-full overflow-hidden mb-8">
-                  <View 
-                    className="h-full rounded-full"
-                    style={{ 
-                      width: `${Math.min(dvInfo.percentage || 0, 100)}%`,
-                      backgroundColor: item.color
-                    }}
-                  />
-                </View>
-              ) : (
-                <View className="h-4 bg-gray-700 rounded-full overflow-hidden mb-8">
-                  <View 
-                    className="h-full rounded-full"
-                    style={{ 
-                      width: '30%',
-                      backgroundColor: item.color
-                    }}
-                  />
-                </View>
-              )}
             </View>
           );
         })}
+
+        {/* Carbohydrates Section with Composite Bar */}
+        {nutriments.carbohydrates_100g && !isNaN(Number(nutriments.carbohydrates_100g)) && (
+          <View className="space-y-4">
+            {renderCompositeCarbBar()}
+          </View>
+        )}
+
+        {/* Fats Section with Composite Bar */}
+        {nutriments.fat_100g && !isNaN(Number(nutriments.fat_100g)) && (
+          <View className="space-y-4">
+            {renderCompositeFatBar()}
+          </View>
+        )}
       </View>
     );
   };
@@ -634,6 +1045,7 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
               {chartType === 'bar' ? renderNutritionInfo() : renderPieChart()}
             </View>
           </View>
+
 
           {/* Ingredients */}
           <View className="bg-[#1E293B] rounded-2xl p-4 mb-4">

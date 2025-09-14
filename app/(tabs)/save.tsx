@@ -1,10 +1,12 @@
 import React from 'react';
 import { Text, View, ScrollView, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useScannedProducts } from '@/contexts/ScannedProductsContext';
 import { ScannedProductCard } from '@/components/ScannedProductCard';
 
 const Saved = () => {
   const { scannedProducts, clearScannedProducts, removeScannedProduct } = useScannedProducts();
+  const insets = useSafeAreaInsets();
 
   const handleProductPress = (product: any) => {
     // You can add navigation to product details here
@@ -36,7 +38,13 @@ const Saved = () => {
       </View>
 
       {/* Content */}
-      <ScrollView className="flex-1 px-6 py-4">
+      <ScrollView 
+        className="flex-1 px-6 py-4"
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 100, // Add extra space for bottom navigation + safe area
+        }}
+        showsVerticalScrollIndicator={false}
+      >
         {scannedProducts.length === 0 ? (
           <View className="flex-1 items-center justify-center py-20">
             <View className="w-24 h-24 bg-gray-200 rounded-full items-center justify-center mb-4">

@@ -15,7 +15,8 @@ interface Profile {
   _id?: string;
   name: string;
   age?: number;
-  conditions: string[];
+  allergens?: string[];
+  conditions?: string[]; // Keep for backward compatibility
   lifestyle?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -188,25 +189,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const syncUserWithBackend = async () => {
     try {
-      if (!user) return;
+      if (!user) {
+        console.log('❌ No user to sync');
+        return;
+      }
+      
+      console.log('🔄 Starting syncUserWithBackend...');
+      console.log('👤 Current user profiles before sync:', user.profiles?.length);
       
       const token = await getCurrentToken();
-      if (!token) return;
+      if (!token) {
+        console.log('❌ No token for sync');
+        return;
+      }
       
-      // Sync user data with backend
-      const response = await apiService.createOrUpdateUser({
-        googleId: user.googleId,
-        email: user.email,
-        name: user.name,
-        picture: user.picture,
-        profiles: user.profiles,
-        scannedCodes: user.scannedCodes,
-      }, token);
+      // Instead of syncing current state, fetch fresh data from backend
+      console.log('📡 Fetching fresh user data from backend...');
+      const response = await apiService.getUserByGoogleId(user.googleId, token);
       
       if (response.status === 'success') {
+        console.log('✅ Fresh user data received:', response.data.user);
+        console.log('📝 Number of profiles in fresh data:', response.data.user?.profiles?.length);
+        
         // Update local user data with backend response
         setUser(response.data.user);
         await SecureStore.setItemAsync('user', JSON.stringify(response.data.user));
+        console.log('✅ User state updated with fresh data');
       }
     } catch (error) {
       console.error('Error syncing user with backend:', error);
