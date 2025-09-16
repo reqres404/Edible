@@ -10,6 +10,7 @@ import { useScannedProducts, ScannedProduct } from "@/contexts/ScannedProductsCo
 import { apiService } from "@/services/api";
 import { ScannedProductIcon } from "@/components/ScannedProductIcon";
 import { ProductInfoDrawer } from "@/components/ProductInfoDrawer";
+import { ProfileSelector } from "@/components/ProfileSelector";
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -37,6 +38,16 @@ export default function ScanScreen() {
   const { getCurrentToken } = useAuth();
   const { addScannedProduct, isProductAlreadyScanned, scannedProducts } = useScannedProducts();
   const insets = useSafeAreaInsets();
+  
+  // Profile selector state
+  const [selectedProfile, setSelectedProfile] = useState<any>(null);
+  const [scannerColor, setScannerColor] = useState('#83C9F4'); // Default color
+  
+  // Handle profile selection
+  const handleProfileSelect = (profile: any, color: string) => {
+    setSelectedProfile(profile);
+    setScannerColor(color);
+  };
   
   // Barcode validation functions
   const isValidBarcode = (code: string): boolean => {
@@ -778,8 +789,10 @@ export default function ScanScreen() {
       <View className="absolute inset-0 pointer-events-none">
         
         <View 
-          className="border-2 rounded-lg bg-transparent absolute border-accent"
+          className="rounded-lg bg-transparent absolute"
           style={{ 
+            borderWidth: 4,
+            borderColor: scannerColor,
             width: screenWidth * 0.8, 
             height: screenWidth * 0.8 * 0.6,
             top: '50%',
@@ -836,14 +849,24 @@ export default function ScanScreen() {
             </Animated.View>
           )}
           
-          <Text className="text-gray-300 text-sm text-center mb-2">
-            {getScanningGuidance()}
-          </Text>
-          <Text className="text-gray-400 text-xs text-center">
-            Hold steady and ensure good lighting for best results
-          </Text>
+
         </View>
         
+      </View>
+      
+      {/* Profile Selector */}
+      <View 
+        className="absolute"
+        style={{
+          bottom: insets.bottom + 140, // Position above the scanned products area
+          left: 0,
+          right: 0,
+        }}
+      >
+        <ProfileSelector
+          onProfileSelect={handleProfileSelect}
+          selectedProfile={selectedProfile}
+        />
       </View>
       
       {/* Product Info Drawer */}
