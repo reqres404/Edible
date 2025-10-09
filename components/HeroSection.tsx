@@ -94,7 +94,11 @@ const HeroSection: React.FC<HeroSectionProps> = ({
                 item.id === 2 ? 'left-0 w-2/5' : 'right-0 w-2/5'
               }`}>
                 <Image
-                  source={require("../assets/images/mascot/daboo-walking-winking.png")}
+                  source={
+                    item.id === 1 ? require("../assets/images/mascot/confusedDog.png") :
+                    item.id === 3 ? require("../assets/images/mascot/HappyDog.png") :
+                    require("../assets/images/mascot/daboo-walking-winking.png")
+                  }
                   style={{ width: 120, height: 120, resizeMode: 'contain' }}
                 />
               </View>
