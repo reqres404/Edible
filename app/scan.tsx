@@ -854,6 +854,24 @@ export default function ScanScreen() {
         
       </View>
       
+      {/* Profile Scanning Indicator - Above profile selector */}
+      {selectedProfile && (
+        <View 
+          className="absolute items-center px-5"
+          style={{
+            bottom: insets.bottom + 300, // Position above the profile selector
+            left: 0,
+            right: 0,
+          }}
+        >
+          <View className="bg-black bg-opacity-60 px-4 py-2 rounded-full">
+            <Text className="text-white text-sm font-medium text-center">
+              Scanning for {selectedProfile.name}
+            </Text>
+          </View>
+        </View>
+      )}
+      
       {/* Profile Selector */}
       <View 
         className="absolute"

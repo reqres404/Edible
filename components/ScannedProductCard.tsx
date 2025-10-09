@@ -46,98 +46,111 @@ export const ScannedProductCard: React.FC<ScannedProductCardProps> = ({
 
   return (
     <Pressable 
-      className="bg-white rounded-2xl p-4 mb-4 shadow-sm border border-gray-100"
+      className="bg-white rounded-2xl mb-4 shadow-sm border border-gray-100"
       onPress={onPress}
+      style={{ elevation: 2 }}
     >
-      <View className="flex-row items-start space-x-4">
-        {/* Product Image */}
-        <View className="w-20 h-20 rounded-xl overflow-hidden bg-gray-100">
-          {product.imageUrl ? (
-            <Image
-              source={{ uri: product.imageUrl }}
-              className="w-full h-full"
-              resizeMode="cover"
-            />
-          ) : (
-            <View className="w-full h-full bg-gray-200 items-center justify-center">
-              <Text className="text-gray-500 text-xs text-center px-1">
-                {product.name?.substring(0, 15) || 'No Image'}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        {/* Product Info */}
-        <View className="flex-1">
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-lg font-bold text-gray-900 flex-1 mr-2" numberOfLines={2}>
-              {product.name || 'Unknown Product'}
-            </Text>
-            {onRemove && (
-              <Pressable 
-                className="p-2"
-                onPress={onRemove}
-              >
-                <Text className="text-red-500 text-lg">×</Text>
-              </Pressable>
+      <View className="p-5">
+        <View className="flex-row items-center">
+          {/* Product Image */}
+          <View className="w-24 h-24 rounded-2xl overflow-hidden bg-gray-100 mr-4">
+            {product.imageUrl ? (
+              <Image
+                source={{ uri: product.imageUrl }}
+                className="w-full h-full"
+                resizeMode="cover"
+              />
+            ) : (
+              <View className="w-full h-full bg-gray-200 items-center justify-center">
+                <Text className="text-gray-500 text-xs text-center px-2">
+                  {product.name?.substring(0, 12) || 'No Image'}
+                </Text>
+              </View>
             )}
           </View>
 
-          {product.brand && (
-            <Text className="text-gray-600 text-sm mb-1">
-              {product.brand}
-            </Text>
-          )}
-
-          {/* Score and Categories */}
-          <View className="flex-row items-center space-x-2 mb-2">
-            <View className={`px-3 py-1 rounded-full border ${getScoreColor(product.nutriscore?.grade || product.nutritionGrade)}`}>
-              <Text className={`text-sm font-bold ${getScoreColor(product.nutriscore?.grade || product.nutritionGrade).split(' ')[0]}`}>
-                {(product.nutriscore?.grade || product.nutritionGrade || 'N/A').toUpperCase()}
-              </Text>
+          {/* Product Info */}
+          <View className="flex-1">
+            {/* Header Row with Title and Remove Button */}
+            <View className="flex-row items-start justify-between mb-3">
+              <View className="flex-1 mr-3">
+                <Text className="text-xl font-bold text-gray-900 leading-tight" numberOfLines={2}>
+                  {product.name || 'Unknown Product'}
+                </Text>
+                {product.brand && (
+                  <Text className="text-gray-600 text-base mt-1">
+                    {product.brand}
+                  </Text>
+                )}
+              </View>
+              {onRemove && (
+                <Pressable 
+                  className="p-1 -mt-1 -mr-1"
+                  onPress={onRemove}
+                >
+                  <View className="w-8 h-8 rounded-full bg-gray-100 items-center justify-center">
+                    <Text className="text-red-500 text-lg font-bold">×</Text>
+                  </View>
+                </Pressable>
+              )}
             </View>
-            
-            {product.categories && product.categories.length > 0 && (
-              <Text className="text-gray-500 text-xs">
-                {product.categories[0]}
-              </Text>
+
+            {/* Score and Category Row */}
+            <View className="flex-row items-center mb-4">
+              <View className={`px-4 py-2 rounded-full border-2 ${getScoreColor(product.nutriscore?.grade || product.nutritionGrade)}`}>
+                <Text className={`text-lg font-bold ${getScoreColor(product.nutriscore?.grade || product.nutritionGrade).split(' ')[0]}`}>
+                  {(product.nutriscore?.grade || product.nutritionGrade || 'N/A').toUpperCase()}
+                </Text>
+              </View>
+              
+              {product.categories && product.categories.length > 0 && (
+                <View className="ml-3 px-3 py-1 bg-gray-100 rounded-full">
+                  <Text className="text-gray-600 text-sm font-medium">
+                    {product.categories[0]}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {/* Nutrition Info */}
+            {product.nutriments && (
+              <View className="bg-gray-50 rounded-xl p-4 mb-4">
+                <View className="flex-row justify-around">
+                  {product.nutriments.energy_kcal_100g && (
+                    <View className="items-center">
+                      <Text className="text-gray-900 font-bold text-lg">
+                        {Math.round(product.nutriments.energy_kcal_100g)}
+                      </Text>
+                      <Text className="text-gray-600 text-sm font-medium mt-1">kcal</Text>
+                    </View>
+                  )}
+                  {product.nutriments.proteins_100g && (
+                    <View className="items-center">
+                      <Text className="text-gray-900 font-bold text-lg">
+                        {product.nutriments.proteins_100g.toFixed(1)}g
+                      </Text>
+                      <Text className="text-gray-600 text-sm font-medium mt-1">Protein</Text>
+                    </View>
+                  )}
+                  {product.nutriments.carbohydrates_100g && (
+                    <View className="items-center">
+                      <Text className="text-gray-900 font-bold text-lg">
+                        {product.nutriments.carbohydrates_100g.toFixed(1)}g
+                      </Text>
+                      <Text className="text-gray-600 text-sm font-medium mt-1">Carbs</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
             )}
-          </View>
 
-          {/* Nutrition Info */}
-          {product.nutriments && (
-            <View className="flex-row space-x-4">
-              {product.nutriments.energy_kcal_100g && (
-                <View className="items-center">
-                  <Text className="text-gray-900 font-semibold text-sm">
-                    {Math.round(product.nutriments.energy_kcal_100g)}
-                  </Text>
-                  <Text className="text-gray-500 text-xs">kcal</Text>
-                </View>
-              )}
-              {product.nutriments.proteins_100g && (
-                <View className="items-center">
-                  <Text className="text-gray-900 font-semibold text-sm">
-                    {product.nutriments.proteins_100g.toFixed(1)}g
-                  </Text>
-                  <Text className="text-gray-500 text-xs">Protein</Text>
-                </View>
-              )}
-              {product.nutriments.carbohydrates_100g && (
-                <View className="items-center">
-                  <Text className="text-gray-900 font-semibold text-sm">
-                    {product.nutriments.carbohydrates_100g.toFixed(1)}g
-                  </Text>
-                  <Text className="text-gray-500 text-xs">Carbs</Text>
-                </View>
-              )}
+            {/* Scan Time */}
+            <View className="flex-row justify-between items-center">
+              <Text className="text-gray-500 text-sm">
+                Scanned {formatDate(product.scannedAt)}
+              </Text>
             </View>
-          )}
-
-          {/* Scan Time */}
-          <Text className="text-gray-400 text-xs mt-2">
-            Scanned {formatDate(product.scannedAt)}
-          </Text>
+          </View>
         </View>
       </View>
     </Pressable>

@@ -13,6 +13,7 @@ interface ProductInfoDrawerProps {
   onSwitchProduct?: (direction: 'left' | 'right') => void;
   hasNextProduct?: boolean;
   hasPreviousProduct?: boolean;
+  isFromHistory?: boolean;
 }
 
 const { height: screenHeight, width: screenWidth } = Dimensions.get('window');
@@ -23,7 +24,8 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
   onClose,
   onSwitchProduct,
   hasNextProduct = false,
-  hasPreviousProduct = false
+  hasPreviousProduct = false,
+  isFromHistory = false
 }) => {
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
@@ -971,6 +973,19 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
             <View className="w-12 h-1 bg-gray-400 rounded-full" />
           </View>
         </PanGestureHandler>
+
+        {/* Close Button - Positioned higher when from History */}
+        {isFromHistory && (
+          <View className="absolute top-4 right-4 z-10">
+            <Pressable 
+              onPress={onClose}
+              className="w-10 h-10 bg-gray-700 rounded-full items-center justify-center"
+              style={{ elevation: 5 }}
+            >
+              <Text className="text-white text-xl font-bold">×</Text>
+            </Pressable>
+          </View>
+        )}
         
         {/* Main content with horizontal swipe detection */}
         <PanGestureHandler
@@ -980,7 +995,14 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
           shouldCancelWhenOutside={false}
         >
           <Animated.View style={{flex: 1}}>
-            <ScrollView ref={scrollViewRef} className="flex-1 px-8 py-6" showsVerticalScrollIndicator={false}>
+            <ScrollView 
+              ref={scrollViewRef} 
+              className="flex-1 px-8 py-6" 
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ 
+                paddingBottom: isFromHistory ? 120 : 20 
+              }}
+            >
           
           {/* Product Overview */}
           <View className="bg-[#1E293B] rounded-2xl p-4 mb-4">
@@ -1091,15 +1113,17 @@ export const ProductInfoDrawer: React.FC<ProductInfoDrawerProps> = ({
           </Animated.View>
         </PanGestureHandler>
 
-        {/* Close Button */}
+        {/* Close Button Container - Keep for spacing, hide button when from History */}
         <View className="px-8 py-6 border-t border-gray-700">
-          <Pressable 
-            onPress={onClose} 
-            className="py-4 rounded-2xl items-center"
-            style={{ backgroundColor: '#98B9F2' }}
-          >
-            <Text className="text-white font-semibold text-lg">Close</Text>
-          </Pressable>
+          {!isFromHistory && (
+            <Pressable 
+              onPress={onClose} 
+              className="py-4 rounded-2xl items-center"
+              style={{ backgroundColor: '#98B9F2' }}
+            >
+              <Text className="text-white font-semibold text-lg">Close</Text>
+            </Pressable>
+          )}
         </View>
         </Animated.View>
     </>
