@@ -29,16 +29,16 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
     }
   };
 
-  const onPressRoute = (index: number) => {
+  const onPressRoute = (routeKey: string, routeName: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     
     const event = navigation.emit({
       type: "tabPress",
-      target: state.routes[index].key,
+      target: routeKey,
       canPreventDefault: true,
     });
     if (!event.defaultPrevented) {
-      navigation.navigate(state.routes[index].name);
+      navigation.navigate(routeName);
     }
   };
 
@@ -51,15 +51,15 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         {/* Distribute icons with an invisible spacer to reserve the center area */}
         {(() => {
           const routesForBar = visibleRoutes;
-          const renderIcon = (route: typeof visibleRoutes[number], index: number) => {
-            const isFocused = state.index === index;
+          const renderIcon = (route: typeof visibleRoutes[number], originalIndex: number) => {
+            const isFocused = state.index === originalIndex;
             const routeName = route?.name || 'index';
             return (
               <Pressable
                 key={route.key}
                 accessibilityRole="button"
                 accessibilityState={isFocused ? { selected: true } : {}}
-                onPress={() => onPressRoute(index)}
+                onPress={() => onPressRoute(route.key, routeName)}
                 className="items-center justify-center"
               >
                 <Image source={getIconForRoute(routeName)} style={{ width: 28, height: 28, tintColor: isFocused ? activeTintColor : inactiveTintColor }} />
@@ -67,13 +67,16 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
             );
           };
 
+          // Get original indices from state.routes
+          const getOriginalIndex = (routeName: string) => state.routes.findIndex(r => r.name === routeName);
+
           return (
             <>
-              {renderIcon(routesForBar[0], 0)}
-              {renderIcon(routesForBar[1], 1)}
+              {renderIcon(routesForBar[0], getOriginalIndex(routesForBar[0].name))}
+              {renderIcon(routesForBar[1], getOriginalIndex(routesForBar[1].name))}
               <View className="w-24" />
-              {renderIcon(routesForBar[2], 2)}
-              {renderIcon(routesForBar[3], 3)}
+              {renderIcon(routesForBar[2], getOriginalIndex(routesForBar[2].name))}
+              {renderIcon(routesForBar[3], getOriginalIndex(routesForBar[3].name))}
             </>
           );
         })()}
@@ -105,6 +108,13 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" options={{ title: "Home" }} />
       <Tabs.Screen name="search" options={{ title: "Info" }} />
+      <Tabs.Screen 
+        name="scan" 
+        options={{ 
+          title: "Scan",
+          href: null, // Hide from tab bar but allow navigation
+        }} 
+      />
       <Tabs.Screen name="save" options={{ title: "History" }} />
       <Tabs.Screen name="profile" options={{ title: "Profile" }} />
     </Tabs>
