@@ -23,29 +23,44 @@ const SignInScreen = () => {
       const response = await GoogleSignin.signIn();
       
       if (isSuccessResponse(response)) {
-        const userData = {
-          id: response.data.user.id,
-          googleId: response.data.user.id,
-          email: response.data.user.email || '',
-          name: response.data.user.name || 'User',
-          picture: response.data.user.photo,
-          profiles: [{
-            name: response.data.user.name || 'User',
-            age: undefined,
-            conditions: [],
-            lifestyle: undefined,
-          }],
-          scannedCodes: [],
-        };
-        
-        await signIn(userData);
-        
-        // Automatically sync user data with backend
+        const token = await GoogleSignin.getTokens();
+        if (!token.idToken) {
+          throw new Error('No ID token received from Google');
+        }
+
+        const googleId = response.data.user.id;
+        const email = response.data.user.email || '';
+        const name = response.data.user.name || 'User';
+        const picture = response.data.user.photo;
+
         try {
-          const token = await GoogleSignin.getTokens();
-          if (token.idToken) {
-            // Call the backend to create/update user
-            await apiService.createOrUpdateUser({
+          // First, try to fetch existing user data from backend
+          console.log('🔍 Checking for existing user in backend...');
+          const existingUser = await apiService.getUserByGoogleId(googleId, token.idToken);
+          
+          if (existingUser.status === 'success' && existingUser.data.user) {
+            console.log('✅ Found existing user with profiles:', existingUser.data.user.profiles?.length);
+            // User exists, use their existing data
+            await signIn(existingUser.data.user);
+          } else {
+            console.log('👤 No existing user found, creating new user...');
+            // User doesn't exist, create new user with default profile
+            const userData = {
+              id: googleId,
+              googleId: googleId,
+              email: email,
+              name: name,
+              picture: picture,
+              profiles: [{
+                name: name,
+                age: undefined,
+                conditions: [],
+                lifestyle: undefined,
+              }],
+              scannedCodes: [],
+            };
+
+            const backendResponse = await apiService.createOrUpdateUser({
               googleId: userData.googleId,
               email: userData.email,
               name: userData.name,
@@ -53,11 +68,51 @@ const SignInScreen = () => {
               profiles: userData.profiles,
               scannedCodes: userData.scannedCodes,
             }, token.idToken);
-            console.log('User synced with backend successfully');
+            
+            if (backendResponse.status === 'success' && backendResponse.data.user) {
+              await signIn(backendResponse.data.user);
+            } else {
+              await signIn(userData);
+            }
           }
-        } catch (syncError) {
-          console.error('Error syncing with backend:', syncError);
-          // Continue anyway - user is signed in locally
+        } catch (error) {
+          console.error('Error during user authentication:', error);
+          
+          // Fallback: create user with default profile
+          const userData = {
+            id: googleId,
+            googleId: googleId,
+            email: email,
+            name: name,
+            picture: picture,
+            profiles: [{
+              name: name,
+              age: undefined,
+              conditions: [],
+              lifestyle: undefined,
+            }],
+            scannedCodes: [],
+          };
+
+          try {
+            const backendResponse = await apiService.createOrUpdateUser({
+              googleId: userData.googleId,
+              email: userData.email,
+              name: userData.name,
+              picture: userData.picture,
+              profiles: userData.profiles,
+              scannedCodes: userData.scannedCodes,
+            }, token.idToken);
+            
+            if (backendResponse.status === 'success' && backendResponse.data.user) {
+              await signIn(backendResponse.data.user);
+            } else {
+              await signIn(userData);
+            }
+          } catch (createError) {
+            console.error('Error creating user:', createError);
+            await signIn(userData);
+          }
         }
         
         router.replace("/(tabs)");

@@ -15,7 +15,8 @@ interface Profile {
   _id?: string;
   name: string;
   age?: number;
-  conditions: string[];
+  allergens?: string[];
+  conditions?: string[]; // Keep for backward compatibility
   lifestyle?: string;
   createdAt?: string;
   updatedAt?: string;
@@ -60,6 +61,27 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  
+  const TOKEN_STORE_KEY = 'google_id_token';
+  const TOKEN_TS_KEY = 'google_id_token_ts';
+  const TOKEN_REFRESH_INTERVAL_MS = 45 * 60 * 1000; // 45 minutes
+
+  const refreshGoogleToken = async (): Promise<string | null> => {
+    try {
+      const currentUser = await GoogleSignin.getCurrentUser();
+      if (!currentUser) return null;
+      const tokens = await GoogleSignin.getTokens();
+      if (tokens?.idToken) {
+        await SecureStore.setItemAsync(TOKEN_STORE_KEY, tokens.idToken);
+        await SecureStore.setItemAsync(TOKEN_TS_KEY, Date.now().toString());
+        return tokens.idToken;
+      }
+      return null;
+    } catch (error) {
+      console.error('Error refreshing Google token:', error);
+      return null;
+    }
+  };
 
   const signIn = async (userData: User) => {
     try {
@@ -70,7 +92,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const tokens = await GoogleSignin.getTokens();
         if (tokens.idToken) {
-          await SecureStore.setItemAsync('google_id_token', tokens.idToken);
+          await SecureStore.setItemAsync(TOKEN_STORE_KEY, tokens.idToken);
+          await SecureStore.setItemAsync(TOKEN_TS_KEY, Date.now().toString());
         }
       } catch (tokenError) {
         console.error('Error getting Google ID token:', tokenError);
@@ -86,7 +109,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       await GoogleSignin.signOut();
       await SecureStore.deleteItemAsync('user');
-      await SecureStore.deleteItemAsync('google_id_token');
+      await SecureStore.deleteItemAsync(TOKEN_STORE_KEY);
+      await SecureStore.deleteItemAsync(TOKEN_TS_KEY);
       setUser(null);
     } catch (error) {
       console.error('Error signing out:', error);
@@ -111,20 +135,23 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           } else {
             // User mismatch, clear stored data
             await SecureStore.deleteItemAsync('user');
-            await SecureStore.deleteItemAsync('google_id_token');
+            await SecureStore.deleteItemAsync(TOKEN_STORE_KEY);
+            await SecureStore.deleteItemAsync(TOKEN_TS_KEY);
           }
         }
       } else {
         // Clear any stored data if not signed in
         await SecureStore.deleteItemAsync('user');
-        await SecureStore.deleteItemAsync('google_id_token');
+        await SecureStore.deleteItemAsync(TOKEN_STORE_KEY);
+        await SecureStore.deleteItemAsync(TOKEN_TS_KEY);
         setUser(null);
       }
     } catch (error) {
       console.error('Error checking auth state:', error);
       // Clear stored data on error
       await SecureStore.deleteItemAsync('user');
-      await SecureStore.deleteItemAsync('google_id_token');
+      await SecureStore.deleteItemAsync(TOKEN_STORE_KEY);
+      await SecureStore.deleteItemAsync(TOKEN_TS_KEY);
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -133,20 +160,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const getCurrentToken = async (): Promise<string | null> => {
     try {
-      // First try to get stored token
-      const storedToken = await SecureStore.getItemAsync('google_id_token');
-      if (storedToken) {
+      // Check stored token and refresh timestamp
+      const [storedToken, storedTs] = await Promise.all([
+        SecureStore.getItemAsync(TOKEN_STORE_KEY),
+        SecureStore.getItemAsync(TOKEN_TS_KEY),
+      ]);
+
+      const lastRefresh = storedTs ? parseInt(storedTs, 10) : 0;
+      const needsRefresh = !storedToken || !lastRefresh || Date.now() - lastRefresh > TOKEN_REFRESH_INTERVAL_MS;
+
+      if (!needsRefresh && storedToken) {
         return storedToken;
       }
-      
-      // Fallback to getting fresh token from Google
-      const currentUser = await GoogleSignin.getCurrentUser();
-      if (currentUser) {
-        const tokens = await GoogleSignin.getTokens();
-        // Store the new token
-        await SecureStore.setItemAsync('google_id_token', tokens.idToken);
-        return tokens.idToken;
-      }
+
+      // Refresh token proactively
+      const refreshed = await refreshGoogleToken();
+      if (refreshed) return refreshed;
+
+      // If refresh failed but we still have a stored token, return it as fallback
+      if (storedToken) return storedToken;
+
       return null;
     } catch (error) {
       console.error('Error getting current token:', error);
@@ -156,25 +189,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const syncUserWithBackend = async () => {
     try {
-      if (!user) return;
+      if (!user) {
+        console.log('❌ No user to sync');
+        return;
+      }
+      
+      console.log('🔄 Starting syncUserWithBackend...');
+      console.log('👤 Current user profiles before sync:', user.profiles?.length);
       
       const token = await getCurrentToken();
-      if (!token) return;
+      if (!token) {
+        console.log('❌ No token for sync');
+        return;
+      }
       
-      // Sync user data with backend
-      const response = await apiService.createOrUpdateUser({
-        googleId: user.googleId,
-        email: user.email,
-        name: user.name,
-        picture: user.picture,
-        profiles: user.profiles,
-        scannedCodes: user.scannedCodes,
-      }, token);
+      // Instead of syncing current state, fetch fresh data from backend
+      console.log('📡 Fetching fresh user data from backend...');
+      const response = await apiService.getUserByGoogleId(user.googleId, token);
       
       if (response.status === 'success') {
+        console.log('✅ Fresh user data received:', response.data.user);
+        console.log('📝 Number of profiles in fresh data:', response.data.user?.profiles?.length);
+        
         // Update local user data with backend response
         setUser(response.data.user);
         await SecureStore.setItemAsync('user', JSON.stringify(response.data.user));
+        console.log('✅ User state updated with fresh data');
       }
     } catch (error) {
       console.error('Error syncing user with backend:', error);
@@ -184,6 +224,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     checkAuthState();
   }, []);
+
+  // Periodic token refresh while user is signed in
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(() => {
+      refreshGoogleToken();
+    }, TOKEN_REFRESH_INTERVAL_MS);
+    return () => clearInterval(interval);
+  }, [user]);
 
   const value = {
     user,

@@ -1,14 +1,24 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Text, View, ScrollView, Pressable } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useScannedProducts } from '@/contexts/ScannedProductsContext';
 import { ScannedProductCard } from '@/components/ScannedProductCard';
+import { ProductInfoDrawer } from '@/components/ProductInfoDrawer';
 
 const Saved = () => {
   const { scannedProducts, clearScannedProducts, removeScannedProduct } = useScannedProducts();
+  const insets = useSafeAreaInsets();
+  const [selectedProduct, setSelectedProduct] = useState<any>(null);
+  const [isDrawerVisible, setIsDrawerVisible] = useState(false);
 
   const handleProductPress = (product: any) => {
-    // You can add navigation to product details here
-    console.log('Product pressed:', product.name);
+    setSelectedProduct(product);
+    setIsDrawerVisible(true);
+  };
+
+  const handleCloseDrawer = () => {
+    setIsDrawerVisible(false);
+    setSelectedProduct(null);
   };
 
   const handleClearAll = () => {
@@ -18,7 +28,10 @@ const Saved = () => {
   return (
     <View className="flex-1 bg-offwhite">
       {/* Header */}
-      <View className="bg-white px-6 py-4 border-b border-gray-200">
+      <View 
+        className="bg-white px-6 py-4 border-b border-gray-200"
+        style={{ paddingTop: insets.top + 16 }}
+      >
         <View className="flex-row items-center justify-between">
           <Text className="text-3xl text-dark-500 font-bold">History</Text>
           {scannedProducts.length > 0 && (
@@ -36,7 +49,13 @@ const Saved = () => {
       </View>
 
       {/* Content */}
-      <ScrollView className="flex-1 px-6 py-4">
+      <ScrollView 
+        className="flex-1 px-6 py-4"
+        contentContainerStyle={{
+          paddingBottom: insets.bottom + 100, // Add extra space for bottom navigation + safe area
+        }}
+        showsVerticalScrollIndicator={false}
+      >
         {scannedProducts.length === 0 ? (
           <View className="flex-1 items-center justify-center py-20">
             <View className="w-24 h-24 bg-gray-200 rounded-full items-center justify-center mb-4">
@@ -60,6 +79,14 @@ const Saved = () => {
           ))
         )}
       </ScrollView>
+
+      {/* Product Info Drawer */}
+      <ProductInfoDrawer
+        product={selectedProduct}
+        isVisible={isDrawerVisible}
+        onClose={handleCloseDrawer}
+        isFromHistory={true}
+      />
     </View>
   );
 };
